@@ -31,6 +31,13 @@ The extension ships the same cadence as a `GEMINI.md` context file.
 Cursor and plain CLAUDE.md / AGENTS.md setups take the standing note printed
 on every expert's page — same cadence, pasted rather than installed.
 
+## The cadence it installs
+
+- START of a task — call `expert_questions` before locking an approach.
+- WHILE working — run `red_flag_check` on drafts, plans, and diffs as a cheap gate.
+- BEFORE finalizing or shipping anything significant — call `review` with context + proposal; before finalizing significant decisions the review verdict comes first, then your delivery.
+- A/B choices — `compare_options` (hard stops apply before scoring). Scope questions — `about_expert`.
+
 ## What it will and will not do
 
 - Consults once per decision, not once per message.
