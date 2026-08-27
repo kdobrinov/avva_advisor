@@ -1,0 +1,6 @@
+{
+  "name": "avva-advisor",
+  "version": "0.2.0",
+  "description": "Standing-advisor cadence for connected Avva experts: your agent consults the expert before locking, shipping, or choosing — without being asked.",
+  "contextFileName": "GEMINI.md"
+}

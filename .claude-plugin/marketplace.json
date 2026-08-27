@@ -1,0 +1,14 @@
+{
+  "name": "avva-advisor",
+  "owner": {
+    "name": "Avva",
+    "url": "https://avva.chat"
+  },
+  "plugins": [
+    {
+      "name": "avva-advisor",
+      "source": "./plugins/avva-advisor",
+      "description": "Standing-advisor cadence for connected Avva experts: your agent consults the expert before locking, shipping, or choosing — without being asked."
+    }
+  ]
+}
