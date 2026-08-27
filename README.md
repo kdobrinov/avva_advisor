@@ -18,6 +18,10 @@ used instead of forgotten.
 /plugin install avva-advisor@avva-advisor
 ```
 
+Installs two things: the standing cadence (your agent consults the expert on
+its own) and `/avva-review`, for when you want the expert on something right
+now.
+
 ## Gemini CLI
 
 ```
