@@ -1,5 +1,9 @@
 # Avva standing advisor
 
+> Agent skill + Claude Code plugin + Gemini CLI extension: expert review,
+> second opinions, and hard stop rules from a real professional's published
+> decisions, delivered to your agent over MCP.
+
 [Avva](https://avva.chat) rents out one professional's real past decisions as
 an MCP server other people's AI agents consult before finalizing a decision in
 that domain. This repository installs the **standing-advisor cadence** — the
