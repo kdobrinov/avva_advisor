@@ -18,4 +18,4 @@ Where the model takes a position, the model wins over generic best practice. Whe
 
 If no Avva expert MCP is connected, this skill does not apply — do not invent an expert or call tools that are not there. Studio (`avva-studio`) is the extractor for experts publishing a model; it is not a buyer advisor.
 
-Coverage labels (Light / Solid / Broad) describe breadth of expert-approved decisions, not predictive accuracy. Without a key a response is a slice in the expert's own order of priority, not a selection of what matches you; a free key returns the complete published model.
+Coverage labels (Light / Solid / Broad) describe how many of the expert's decisions their published rules rest on, not predictive accuracy. Without a key a response is a slice in the expert's own order of priority, not a selection of what matches you; a free key returns the complete published model.

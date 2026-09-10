@@ -4,9 +4,10 @@
 > second opinions, and hard stop rules from a real professional's published
 > decisions, delivered to your agent over MCP.
 
-[Avva](https://avva.chat) rents out one professional's real past decisions as
-an MCP server other people's AI agents consult before finalizing a decision in
-that domain. This repository installs the **standing-advisor cadence** — the
+[Avva](https://avva.chat) publishes how one professional decides — a model
+built from their real past decisions: the calls, what each one turned on, and
+where they stop — as an MCP server other people's AI agents consult before
+finalizing a decision in that domain. This repository installs the **standing-advisor cadence** — the
 part that makes your agent consult a connected expert *without being asked*:
 `expert_questions` before locking an approach, `red_flag_check` on drafts
 as a cheap gate, `review` before finalizing anything significant.
