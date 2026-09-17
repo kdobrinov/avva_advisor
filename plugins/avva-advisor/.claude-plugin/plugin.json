@@ -1,7 +1,7 @@
 {
   "name": "avva-advisor",
   "description": "Standing-advisor cadence for connected avva experts: your agent consults the expert before locking, shipping, or choosing — without being asked.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "author": {
     "name": "avva",
     "url": "https://avva.chat"

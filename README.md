@@ -27,13 +27,33 @@ Installs two things: the standing cadence (your agent consults the expert on
 its own) and `/avva-review`, for when you want the expert on something right
 now.
 
+It also installs a hook: before `git push`, your agent asks the connected
+expert to `review` the outgoing diff, reads the packet, and reports the
+verdict before the push goes out. The hook allows the push, with a note, when
+no expert is connected in the project or the server does not answer.
+
 ## Gemini CLI
 
 ```
 gemini extensions install https://github.com/kdobrinov/avva_advisor
 ```
 
-The extension ships the same cadence as a `GEMINI.md` context file.
+The extension ships the same cadence as a `GEMINI.md` context file. No
+hook: Gemini CLI has a hook surface, but the way an extension ships one has
+not been run here, and this repository prints only what was run.
+
+## avva Studio (for experts building a model)
+
+```
+/plugin marketplace add kdobrinov/avva_advisor
+/plugin install avva-studio@avva-advisor
+```
+
+Installs the Studio extractor as an MCP server, `/avva-build-model <domain> |
+<name> | [range] | [only]`, and a script that renders the approval sheet
+from the decisions file on your disk, so what you read is what is sent. The
+brief itself comes from `begin_extraction`; the plugin adds tooling, not a
+second brief.
 
 ## Other clients
 
@@ -60,7 +80,8 @@ on every expert's page — same cadence, pasted rather than installed.
 
 Every file in this repository is **generated** from the
 [avvamcp](https://github.com/kdobrinov/avvamcp) product repo
-(`scripts/render-advisor-repo.mjs`, source of truth
-`shared/standing-advisor.ts`). Do not edit files here by hand — the first
+(`scripts/render-advisor-repo.mjs`; sources of truth
+`shared/standing-advisor.ts`, `shared/advisor-hook.ts` and
+`shared/studio-plugin.ts`). Do not edit files here by hand — the first
 version of this plugin was a hand-kept copy and it drifted 19% from its
 source before anyone noticed. Rerun the generator there and push.
