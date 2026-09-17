@@ -1,0 +1,17 @@
+{
+  "description": "avva advisor 0.4.0: before git push, ask the connected avva expert to review the outgoing diff.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/review-before-push.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
