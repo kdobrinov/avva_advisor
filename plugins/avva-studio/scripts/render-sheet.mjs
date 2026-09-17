@@ -12,104 +12,112 @@ const CALL_WORDS = 15
 const TEXT_FIELDS = ['title', 'origin', 'context', 'decision', 'driver', 'condition']
 
 // The date-range parser, verbatim from the product (shared/date-range.ts), types stripped.
+const MONTHS = 30.4375 * 24 * 60 * 60 * 1e3;
+const YEARS = 365.25 * 24 * 60 * 60 * 1e3;
+function day(ms) {
+	return new Date(ms).toISOString().slice(0, 10);
+}
+function clampDay(value, end) {
+	const m = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(value.trim());
+	if (!m) return null;
+	const year = Number(m[1]);
+	if (year < 1970 || year > 2100) return null;
+	const month = m[2] ? Number(m[2]) : end ? 12 : 1;
+	if (month < 1 || month > 12) return null;
+	if (m[3]) {
+		const d = Number(m[3]);
+		if (d < 1 || d > 31) return null;
+		return `${m[1]}-${m[2]}-${m[3]}`;
+	}
+	const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+	return `${m[1]}-${String(month).padStart(2, "0")}-${end ? String(last).padStart(2, "0") : "01"}`;
+}
+const WORD_NUMBERS = {
+	one: 1,
+	two: 2,
+	three: 3,
+	four: 4,
+	five: 5,
+	six: 6,
+	seven: 7,
+	eight: 8,
+	nine: 9,
+	ten: 10,
+	a: 1,
+	an: 1,
+	один: 1,
+	одного: 1,
+	два: 2,
+	двух: 2,
+	три: 3,
+	трёх: 3,
+	трех: 3,
+	четыре: 4,
+	пять: 5,
+	пяти: 5
+};
 /**
- * The date range an expert typed on the Source step, read back as dates so
- * `submit_decisions` can count the approved records that fall outside it.
- *
- * Deliberately partial. The field is free text in the expert's own words
- * ("the last two years", "2023 only", "since 2021", "2024-01 to 2025-06"),
- * and a range the parser cannot read must come back as `null` — "could not
- * tell" — never as an empty range that reports every record outside. The
- * count that uses this is a fact on a receipt and a sentence to the expert;
- * a wrong number there is the fail-LYING shape this repo records more than
- * any other, and silence is the honest fallback.
- */
-
-const MONTHS = 30.4375 * 24 * 60 * 60 * 1000
-const YEARS = 365.25 * 24 * 60 * 60 * 1000
-
-function day(ms        )         {
-  return new Date(ms).toISOString().slice(0, 10)
+* Reads the range, or returns null when the words do not state one the code
+* can defend. `now` is injectable for tests.
+*/
+function parseDateRange(words, now = new Date()) {
+	const text = words.trim().toLowerCase().replace(/\s+/g, " ");
+	if (!text) return null;
+	const today = day(now.getTime());
+	// "2024-01 to 2025-06", "2021..2023", "2022 – 2024"
+	const span = /(\d{4}(?:-\d{2})?(?:-\d{2})?)\s*(?:to|until|through|–|—|-|\.\.|по|до)\s*(\d{4}(?:-\d{2})?(?:-\d{2})?)/.exec(text);
+	if (span) {
+		const from = clampDay(span[1], false);
+		const to = clampDay(span[2], true);
+		return from && to && from <= to ? {
+			from,
+			to
+		} : null;
+	}
+	// "since 2021", "from 2021", "с 2021"
+	const since = /(?:since|from|starting|с)\s+(\d{4}(?:-\d{2})?(?:-\d{2})?)/.exec(text);
+	if (since) {
+		const from = clampDay(since[1], false);
+		return from ? {
+			from,
+			to: today
+		} : null;
+	}
+	// "last year", "the past 18 months", "last two years", "последний год", "последние 2 года"
+	const relative = /(?:last|past|previous|последн\p{L}*|прошл\p{L}*)\s+(?:(\d+|\p{L}+)\s+)?(years?|months?|weeks?|год\p{L}*|лет|месяц\p{L}*|недел\p{L}*)/u.exec(text);
+	if (relative) {
+		const raw = relative[1];
+		const n = raw === undefined ? 1 : /^\d+$/.test(raw) ? Number(raw) : WORD_NUMBERS[raw];
+		if (!n || n > 50) return null;
+		const unit = relative[2];
+		const ms = /^week|^недел/u.test(unit) ? 7 * 24 * 60 * 60 * 1e3 : /^month|^месяц/u.test(unit) ? MONTHS : YEARS;
+		return {
+			from: day(now.getTime() - n * ms),
+			to: today
+		};
+	}
+	// "2023", "2023 only", "in 2019"
+	const year = /(?:^|\D)((?:19|20)\d{2})(?:\D|$)/.exec(text);
+	if (year && !/\d{4}.*\d{4}/.test(text)) {
+		const from = clampDay(year[1], false);
+		const to = clampDay(year[1], true);
+		return from && to ? {
+			from,
+			to
+		} : null;
+	}
+	return null;
 }
-
-function clampDay(value        , end         )                {
-  const m = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(value.trim())
-  if (!m) return null
-  const year = Number(m[1])
-  if (year < 1970 || year > 2100) return null
-  const month = m[2] ? Number(m[2]) : end ? 12 : 1
-  if (month < 1 || month > 12) return null
-  if (m[3]) {
-    const d = Number(m[3])
-    if (d < 1 || d > 31) return null
-    return `${m[1]}-${m[2]}-${m[3]}`
-  }
-  const last = new Date(Date.UTC(year, month, 0)).getUTCDate()
-  return `${m[1]}-${String(month).padStart(2, '0')}-${end ? String(last).padStart(2, '0') : '01'}`
-}
-
-const WORD_NUMBERS                         = {
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
-  a: 1, an: 1, один: 1, одного: 1, два: 2, двух: 2, три: 3, трёх: 3, трех: 3, четыре: 4, пять: 5, пяти: 5,
-}
-
-/**
- * Reads the range, or returns null when the words do not state one the code
- * can defend. `now` is injectable for tests.
- */
-function parseDateRange(words        , now = new Date())                   {
-  const text = words.trim().toLowerCase().replace(/\s+/g, ' ')
-  if (!text) return null
-  const today = day(now.getTime())
-
-  // "2024-01 to 2025-06", "2021..2023", "2022 – 2024"
-  const span = /(\d{4}(?:-\d{2})?(?:-\d{2})?)\s*(?:to|until|through|–|—|-|\.\.|по|до)\s*(\d{4}(?:-\d{2})?(?:-\d{2})?)/.exec(text)
-  if (span) {
-    const from = clampDay(span[1], false)
-    const to = clampDay(span[2], true)
-    return from && to && from <= to ? { from, to } : null
-  }
-
-  // "since 2021", "from 2021", "с 2021"
-  const since = /(?:since|from|starting|с)\s+(\d{4}(?:-\d{2})?(?:-\d{2})?)/.exec(text)
-  if (since) {
-    const from = clampDay(since[1], false)
-    return from ? { from, to: today } : null
-  }
-
-  // "last year", "the past 18 months", "last two years", "последний год", "последние 2 года"
-  const relative =
-    /(?:last|past|previous|последн\p{L}*|прошл\p{L}*)\s+(?:(\d+|\p{L}+)\s+)?(years?|months?|weeks?|год\p{L}*|лет|месяц\p{L}*|недел\p{L}*)/u.exec(text)
-  if (relative) {
-    const raw = relative[1]
-    const n = raw === undefined ? 1 : /^\d+$/.test(raw) ? Number(raw) : WORD_NUMBERS[raw]
-    if (!n || n > 50) return null
-    const unit = relative[2]
-    const ms = /^week|^недел/u.test(unit) ? 7 * 24 * 60 * 60 * 1000 : /^month|^месяц/u.test(unit) ? MONTHS : YEARS
-    return { from: day(now.getTime() - n * ms), to: today }
-  }
-
-  // "2023", "2023 only", "in 2019"
-  const year = /(?:^|\D)((?:19|20)\d{2})(?:\D|$)/.exec(text)
-  if (year && !/\d{4}.*\d{4}/.test(text)) {
-    const from = clampDay(year[1], false)
-    const to = clampDay(year[1], true)
-    return from && to ? { from, to } : null
-  }
-
-  return null
-}
-
 /** Dated items outside the range; `null` when the range could not be read. Undated items never count. */
-function countOutsideRange(dates                           , range                  )                {
-  if (!range) return null
-  let outside = 0
-  for (const value of dates) {
-    const d = (value ?? '').slice(0, 10)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue
-    if (d < range.from || d > range.to) outside += 1
-  }
-  return outside
+function countOutsideRange(dates, range) {
+	if (!range) return null;
+	let outside = 0;
+	for (const value of dates) {
+		const d = (value ?? "").slice(0, 10);
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+		if (d < range.from || d > range.to) outside += 1;
+	}
+	return outside;
 }
 
 function fail(lines) {
