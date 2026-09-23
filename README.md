@@ -78,9 +78,8 @@ on every expert's page — same cadence, pasted rather than installed.
 
 ## Maintenance
 
-Every file in this repository is **generated** from the
-[avvamcp](https://github.com/kdobrinov/avvamcp) product repo
-(`scripts/render-advisor-repo.mjs`; sources of truth
+Every file in this repository is **generated** from avva's product
+repository, which is private (`scripts/render-advisor-repo.mjs`; sources of truth
 `shared/standing-advisor.ts`, `shared/advisor-hook.ts` and
 `shared/studio-plugin.ts`). Do not edit files here by hand — the first
 version of this plugin was a hand-kept copy and it drifted 19% from its
