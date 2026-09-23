@@ -15,7 +15,7 @@
       "name": "avva-studio",
       "source": "./plugins/avva-studio",
       "description": "Build your avva Decision Model from the work your assistant already reaches: the Studio extractor as an MCP server, /avva-build-model, and the approval-sheet renderer.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

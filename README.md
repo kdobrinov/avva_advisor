@@ -1,20 +1,21 @@
-# avva standing advisor
+# avva for your agent
 
-> Agent skill + Claude Code plugin + Gemini CLI extension: expert review,
-> second opinions, and hard stop rules from a real professional's published
-> decisions, delivered to your agent over MCP.
+Two plugins for [avva](https://avva.chat). avva publishes how one professional decides
+(their past calls, what each one turned on, where they stop) as an MCP server
+your agent consults before it answers.
 
-[avva](https://avva.chat) publishes how one professional decides — a model
-built from their real past decisions: the calls, what each one turned on, and
-where they stop — as an MCP server other people's AI agents consult before
-finalizing a decision in that domain. This repository installs the **standing-advisor cadence** — the
-part that makes your agent consult a connected expert *without being asked*:
-`expert_questions` before locking an approach, `red_flag_check` on drafts
-as a cheap gate, `review` before finalizing anything significant.
+- **avva-advisor**, for people who use a connected model. It makes your agent
+  consult it without being asked: `expert_questions` before locking an
+  approach, `red_flag_check` on a draft, `review` before anything
+  significant ships.
+- **avva-studio**, for professionals building one from decisions they already
+  made.
 
-It does not connect an expert by itself. Pick one on [avva.chat](https://avva.chat),
-copy the connector from their page, then install this so the connection gets
-used instead of forgotten.
+The advisor does not connect a model by itself. Pick one on
+[avva.chat](https://avva.chat), copy the connection from its page, then
+install this so the connection gets used instead of forgotten. Some models
+on the shelf are reference models: composites avva wrote, labelled as such on
+their page, for trying a connection.
 
 ## Claude Code
 
