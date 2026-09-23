@@ -51,6 +51,11 @@ const digest = createHash('sha256').update(diff).digest('hex').slice(0, 12)
 if (command.includes('AVVA_REVIEWED=' + digest)) process.exit(0)
 
 const branch = (git('rev-parse', '--abbrev-ref', 'HEAD') || '').trim()
+// The proposal is capped, and both readers are told when it was: an agent
+// applying the packet would otherwise take a review of the first 8,000
+// characters for a review of the push.
+const LIMIT = 8000
+const cut = diff.length > LIMIT ? 'Only the first 8,000 of ' + diff.length + ' characters of the diff were sent for review.' : ''
 const body = {
   jsonrpc: '2.0',
   id: 1,
@@ -58,12 +63,16 @@ const body = {
   params: {
     name: 'review',
     arguments: {
-      context: 'A git push from branch ' + branch + '. The proposal is the outgoing diff, as it would land on the remote.',
-      proposal: diff.slice(0, 8000),
+      context: 'A git push from branch ' + branch + '. The proposal is the outgoing diff, as it would land on the remote.' + (cut ? ' ' + cut + ' The rest was not seen.' : ''),
+      proposal: diff.slice(0, LIMIT),
     },
   },
 }
 let packet = null
+// Why there is no packet, when the server said. "Did not answer" was printed
+// for a 401 dead key, a spent daily allowance and a -32002 outage alike, and
+// each has a different fix the user can make only if told which.
+let refusal = ''
 try {
   const res = await fetch(server.url, {
     method: 'POST',
@@ -72,17 +81,29 @@ try {
     body: JSON.stringify(body),
   })
   const text = await res.text()
+  if (!res.ok) refusal = 'HTTP ' + res.status
   const json = JSON.parse(text.startsWith('{') ? text : (text.match(/data: (.*)/) || [])[1] || '{}')
+  const said =
+    (json.error && json.error.message) ||
+    (json.result && json.result.isError && ((json.result.content || []).find((c) => c.type === 'text') || {}).text)
+  if (said) refusal = String(said).slice(0, 500)
   const content = json.result && !json.result.isError ? json.result.content || [] : []
   packet = (content.find((c) => c.type === 'text') || {}).text || null
 } catch {
   packet = null
 }
-if (!packet) allow(name + ' did not answer, so this push was not reviewed')
+if (!packet) {
+  allow(
+    refusal
+      ? name + ' refused the review, so this push was not reviewed. It said: ' + refusal
+      : name + ' did not answer, so this push was not reviewed',
+  )
+}
 
 console.error(
   [
     'avva: ' + name + ' reviewed the outgoing diff (' + digest + '). Apply the packet below and report the verdict first.',
+    ...(cut ? [cut + ' Review the rest yourself against the same packet before pushing.'] : []),
     'If the verdict is reject, revise before pushing. Otherwise push the same diff again with the marker in front:',
     '  AVVA_REVIEWED=' + digest + ' ' + command,
     '',

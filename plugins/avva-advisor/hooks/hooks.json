@@ -1,5 +1,5 @@
 {
-  "description": "avva advisor 0.4.0: before git push, ask the connected avva expert to review the outgoing diff.",
+  "description": "avva advisor 0.4.1: before git push, ask the connected avva expert to review the outgoing diff.",
   "hooks": {
     "PreToolUse": [
       {
