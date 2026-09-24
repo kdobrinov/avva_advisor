@@ -22,7 +22,7 @@ const git = (...args) => {
     return null
   }
 }
-const servers = (file, pick) => {
+const read = (file, pick) => {
   try {
     return pick(JSON.parse(readFileSync(file, 'utf8'))) || {}
   } catch {
@@ -30,19 +30,36 @@ const servers = (file, pick) => {
   }
 }
 
-// The connected expert: the first avva-* HTTP server that is not avva-studio (the extractor), from ~/.claude.json or the project's .mcp.json — the same rule the skill states.
+// The connected expert: an avva-* HTTP server that is not avva-studio (the
+// extractor). Looked up in Claude Code's own precedence (local scope, then
+// the project's .mcp.json, then user scope) and in every directory that can
+// name this project: the cwd, CLAUDE_PROJECT_DIR and the repository root. A
+// push from a subdirectory looked only under projects[cwd], found nothing and
+// went out unreviewed; a user-scope expert was taken before the project's own.
 const cwd = process.cwd()
-const candidates = {
-  ...servers(join(homedir(), '.claude.json'), (j) => j.mcpServers),
-  ...servers(join(homedir(), '.claude.json'), (j) => j.projects && j.projects[cwd] && j.projects[cwd].mcpServers),
-  ...servers(join(process.env.CLAUDE_PROJECT_DIR || cwd, '.mcp.json'), (j) => j.mcpServers),
-  ...servers(join(cwd, '.mcp.json'), (j) => j.mcpServers),
+const top = (git('rev-parse', '--show-toplevel') || '').trim()
+const dirs = [...new Set([cwd, process.env.CLAUDE_PROJECT_DIR, top].filter(Boolean))]
+const claudeJson = join(homedir(), '.claude.json')
+const scopes = [
+  ...dirs.map((dir) => ['this project (local scope)', read(claudeJson, (j) => j.projects && j.projects[dir] && j.projects[dir].mcpServers)]),
+  ...dirs.map((dir) => ['this project (.mcp.json)', read(join(dir, '.mcp.json'), (j) => j.mcpServers)]),
+  ['every project (user scope)', read(claudeJson, (j) => j.mcpServers)],
+]
+const experts = []
+for (const [scope, entries] of scopes) {
+  for (const [name, s] of Object.entries(entries)) {
+    if (!name.startsWith('avva-') || name === 'avva-studio' || !s || typeof s.url !== 'string') continue
+    if (!experts.some((e) => e.name === name)) experts.push({ name, server: s, scope })
+  }
 }
-const found = Object.entries(candidates).find(
-  ([name, s]) => name.startsWith('avva-') && name !== 'avva-studio' && s && typeof s.url === 'string',
-)
-if (!found) allow('no avva expert MCP is connected in this project, so this push was not reviewed')
-const [name, server] = found
+if (!experts.length) allow('no avva expert MCP is connected in this project, so this push was not reviewed')
+const { name, server, scope } = experts[0]
+// Which expert, and why that one: two connected experts used to mean the
+// first by key order, silently.
+const others = experts.slice(1).map((e) => e.name)
+const chosen =
+  name + ', connected for ' + scope +
+  (others.length ? '; also connected and not used for this review: ' + others.join(', ') + '. Remove or rename the one you do not want reviewing pushes' : '')
 
 const outgoing = git('diff', '@{upstream}...HEAD') ?? git('diff', 'origin/HEAD...HEAD')
 const diff = (outgoing && outgoing.trim() ? outgoing : git('diff', '--cached')) || ''
@@ -77,7 +94,12 @@ try {
   const res = await fetch(server.url, {
     method: 'POST',
     signal: AbortSignal.timeout(20000),
-    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...(server.headers || {}) },
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+      'x-avva-client': 'advisor-hook/0.4.2',
+      ...(server.headers || {}),
+    },
     body: JSON.stringify(body),
   })
   const text = await res.text()
@@ -103,6 +125,7 @@ if (!packet) {
 console.error(
   [
     'avva: ' + name + ' reviewed the outgoing diff (' + digest + '). Apply the packet below and report the verdict first.',
+    'Reviewer: ' + chosen + '.',
     ...(cut ? [cut + ' Review the rest yourself against the same packet before pushing.'] : []),
     'If the verdict is reject, revise before pushing. Otherwise push the same diff again with the marker in front:',
     '  AVVA_REVIEWED=' + digest + ' ' + command,

@@ -7,7 +7,7 @@ description: Build or rebuild an avva Decision Model in avva Studio — the extr
 
 1. Call `begin_extraction` on the `avva-studio` MCP server and follow the brief it returns, step by step. It is written in the user's voice and it is the whole method; this skill adds tooling, not a second brief.
 2. Sweep. If you can run parallel workers, run one sweep per source and merge the results; if you cannot, take the sources in the order most likely to hold reasons: chat history, reviews and threads, then documents and boards. Never read this conversation, an earlier avva Studio session, or material about avva itself as a source.
-3. Write the json first. Save the exact array you would submit as `avva-decisions-domain.json` (`<domain>` is the domain slugified: lowercase, hyphens), in the project directory or where the user says. Every record carries an `origin` placeholder label for where it came from.
+3. Write the json first. Save the exact array you would submit as `avva-decisions-domain.json` (`<domain>` is the domain slugified: lowercase, hyphens), OUTSIDE any git working tree: by default in `~/avva/` (create the folder), or where the user says. It is their raw approved set and its only copy, and a project directory is usually a repository one `git add -A` from a remote. If the user wants it inside a repository, first add its path to that repository's `.git/info/exclude` and tell them you did. The script below warns when the file is tracked or not ignored; act on the warning before anything else. Every record carries an `origin` placeholder label for where it came from.
 4. Render the records with the bundled script, never by hand:
 
    ```

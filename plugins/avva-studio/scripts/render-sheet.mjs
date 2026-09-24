@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Rendered by avvamcp scripts/render-advisor-repo.mjs from shared/studio-plugin.ts. Do not edit by hand.
 // Renders the approval sheet from the decisions json: what you read here is what would be sent.
+import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
@@ -150,6 +151,27 @@ try {
 } catch (error) {
   fail(['cannot read ' + jsonPath + ': ' + (error && error.message)])
 }
+// The json is the user's RAW approved set and its only copy. For a Claude Code
+// user the working directory is usually a git working tree, one git add -A
+// from a remote, so say so before anything else. Warnings go to stderr; a
+// machine without git, or a file outside any repository, prints nothing.
+const git = (argv) => {
+  try {
+    execFileSync('git', argv, { cwd: dirname(jsonPath), stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+if (git(['rev-parse', '--is-inside-work-tree'])) {
+  const file = basename(jsonPath)
+  if (git(['ls-files', '--error-unmatch', '--', file])) {
+    console.error('WARNING: ' + file + ' is TRACKED by git. It is the user\'s raw approved set and must never be committed or pushed: run git rm --cached -- ' + file + ', add it to .git/info/exclude, and tell the user. Or move it to ~/avva/.')
+  } else if (!git(['check-ignore', '-q', '--', file])) {
+    console.error('WARNING: ' + file + ' is inside a git working tree and not ignored, so one git add -A commits the user\'s raw approved set. Add it to .git/info/exclude (or move it to ~/avva/) and tell the user.')
+  }
+}
+
 const records = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.decisions) ? parsed.decisions : Array.isArray(parsed?.episodes) ? parsed.episodes : null
 if (!records) fail(['the json must be the array of records that submit_decisions will receive'])
 

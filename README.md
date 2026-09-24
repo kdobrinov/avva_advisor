@@ -33,6 +33,13 @@ expert to `review` the outgoing diff, reads the packet, and reports the
 verdict before the push goes out. The hook allows the push, with a note, when
 no expert is connected in the project or the server does not answer.
 
+The hook runs on **every** `git push`, mechanical or not: it sends the
+outgoing diff (its first 8,000 characters) to the expert's `review` and
+blocks the push until your agent has applied the packet. On a connection
+without a key, each of those reviews spends the trial allowance
+(40 consults a day, per model). With more than one expert connected, it uses the
+project's over your user-wide one and names the expert it chose.
+
 ## Gemini CLI
 
 ```
@@ -72,7 +79,7 @@ on every expert's page — same cadence, pasted rather than installed.
 
 - Consults once per decision, not once per message.
 - Stays quiet on mechanical work: renames, typo fixes, formatting, anything
-  trivially reversible.
+  trivially reversible. The push hook is the exception: it reviews every push.
 - Errs toward calling: a packet you did not need costs some context; a
   decision finalized without one is the failure this advisor exists to prevent.
 - Does nothing when no avva expert MCP is connected.
