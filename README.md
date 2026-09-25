@@ -73,7 +73,7 @@ on every expert's page — same cadence, pasted rather than installed.
 - START of a task — call `expert_questions` before locking an approach.
 - WHILE working — run `red_flag_check` on drafts, plans, and diffs as a cheap gate.
 - BEFORE finalizing or shipping anything significant — call `review` with context + proposal; before finalizing significant decisions the review verdict comes first, then your delivery.
-- A/B choices — `compare_options` (hard stops disqualify an option before the criteria are compared). Scope questions — `about_expert`.
+- A/B choices — `compare_options` (a stop rule of BLOCK severity disqualifies an option before the criteria are compared). Scope questions — `about_expert`.
 
 ## What it will and will not do
 
