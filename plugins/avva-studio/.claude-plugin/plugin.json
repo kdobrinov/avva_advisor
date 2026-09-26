@@ -1,7 +1,7 @@
 {
   "name": "avva-studio",
   "description": "Build your avva Decision Model from the work your assistant already reaches: the Studio extractor as an MCP server, /avva-build-model, and the approval-sheet renderer.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": {
     "name": "avva",
     "url": "https://avva.chat"
