@@ -11,9 +11,9 @@ description: Build or rebuild an avva Decision Model in avva Studio — the extr
 4. Render the records with the bundled script, never by hand:
 
    ```
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/render-sheet.mjs" avva-decisions-domain.json [--range "<the range the user set>"] [--exceptions 3,7,12] [--lang ru|en]
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/render-sheet.mjs" avva-decisions-domain.json [--range "<the range the user set>"] [--exceptions 3,7,12] [--against 2,5,9] [--lang ru|en]
    ```
 
-   It validates the records against the wire shape, prints them in full to stdout with the group table, and flags residual emails, phones, URLs, ticket ids, key-looking strings and records that name avva itself. `--exceptions` takes the numbers of the records you are least sure are clean after redaction; that judgment is yours, the script only renders it. Pass `--range` whenever the user set one, so records outside it land in their own group.
+   It validates the records against the wire shape, prints them in full to stdout with the group table, and flags residual emails, phones, URLs, ticket ids, key-looking strings and records that name avva itself. `--exceptions` takes the numbers of the records you are least sure are clean after redaction; that judgment is yours, the script only renders it. `--against` takes the numbers of the records the brief's AGAINST THE DEFAULT rule marks — also your reading — and the script prints the count and, below the brief's share, the request for more. Pass `--range` whenever the user set one, so records outside it land in their own group.
 5. Put that output in the chat as it came out, and ask the brief's one question with the count. The user is reading the records that would be sent, rendered from the json by this script — never retyped, summarized or tidied by you, which is the whole reason the script exists. After removals, edit the json, run it again, and show the group table only. Only if the user would rather read a file, add `--sheet`: it writes `avva-decisions-domain.md` beside the json from the same render. That file is a convenience, never the thing they approve.
 6. Only after explicit approval, call `submit_decisions` with the array in the json exactly as it stands, and follow what it returns.
