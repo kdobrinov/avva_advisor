@@ -97,7 +97,7 @@ try {
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': 'advisor-hook/0.4.3',
+      'x-avva-client': 'advisor-hook/0.4.4',
       ...(server.headers || {}),
     },
     body: JSON.stringify(body),
