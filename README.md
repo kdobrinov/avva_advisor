@@ -28,17 +28,27 @@ Installs two things: the standing cadence (your agent consults the expert on
 its own) and `/avva-review`, for when you want the expert on something right
 now.
 
-It also installs a hook: before `git push`, your agent asks the connected
-expert to `review` the outgoing diff, reads the packet, and reports the
-verdict before the push goes out. The hook allows the push, with a note, when
-no expert is connected in the project or the server does not answer.
+It also installs a hook. Before a `git push`, it works out what that push
+sends, fetches the connected expert's `review` packet for it, and holds the
+push: your agent applies the packet, puts its verdict first, and pushes the
+same diff again with the marker the hook prints. The hook judges nothing —
+the verdict is your agent's. It lets the push through, with a note, when no
+expert is connected in the project, when the server does not answer or
+refuses, or when it cannot tell what a ref sends, and then it names that ref.
 
-The hook runs on **every** `git push`, mechanical or not: it sends the
-outgoing diff (its first 8,000 characters) to the expert's `review` and
-blocks the push until your agent has applied the packet. On a connection
-without a key, each of those reviews spends the trial allowance
-(40 consults a day, per model). With more than one expert connected, it uses the
-project's over your user-wide one and names the expert it chose.
+What leaves your machine: up to 8,000 characters of the diff plus the list of
+changed files, sent to the expert's `review` and not stored. The diff is
+what each pushed ref has that the remote's tracking refs lack, for the remote
+and branches the command names. When the same command commits first
+(`git commit … && git push`, `commit -a`, `git add -A`), the hook predicts
+that commit from your index and work tree. It cannot see what another program
+changes before a commit, or what `git add <paths>`, an amend or a pull will
+do, so it holds such a command and asks for that step on its own first. A dry
+run and a deletion send nothing and go through. On a connection without a
+key, each packet spends the trial allowance (40 consults a day, per model). With more
+than one expert connected, it uses the project's over your user-wide one and
+names the expert it chose. In CI it says so in its request, so a pipeline's
+pushes are counted apart from yours.
 
 ## Gemini CLI
 
@@ -79,7 +89,8 @@ on every expert's page — same cadence, pasted rather than installed.
 
 - Consults once per decision, not once per message.
 - Stays quiet on mechanical work: renames, typo fixes, formatting, anything
-  trivially reversible. The push hook is the exception: it reviews every push.
+  trivially reversible. The push hook is the exception: it fetches a packet
+  for every push that sends something, mechanical or not.
 - Errs toward calling: a packet you did not need costs some context; a
   decision finalized without one is the failure this advisor exists to prevent.
 - Does nothing when no avva expert MCP is connected.

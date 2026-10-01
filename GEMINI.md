@@ -6,7 +6,7 @@ Do not wait for the user to say "Use avva" or name the expert. If an avva MCP se
 
 1. START of a task — `expert_questions` before locking an approach.
 2. WHILE working — `red_flag_check` on drafts, plans, and diffs (cheap gate).
-3. BEFORE finalizing or shipping anything significant — `review` with context + proposal. Follow the returned protocol exactly. The verdict comes first, then your delivery. If `review` returns reject, revise before proceeding.
+3. BEFORE finalizing or shipping anything significant — `review` with context + proposal. Follow the returned protocol exactly. The verdict comes first, then your delivery. If your verdict from the review packet is reject, revise before proceeding.
 4. A/B choices — `compare_options` (a stop rule of BLOCK severity disqualifies an option before the criteria are compared).
 5. Unsure this domain applies — `about_expert`.
 
