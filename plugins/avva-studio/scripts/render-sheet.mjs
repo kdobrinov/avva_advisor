@@ -7,7 +7,7 @@ import { basename, dirname, join } from 'node:path'
 
 const FIELDS = {"title":{"max":200},"date":{"max":40},"sourceType":{"values":["chat-history","code-and-reviews","issues-and-roadmaps","documents","customer-systems","guided-recall","other"]},"origin":{"max":80},"context":{"max":4000},"decision":{"required":true,"max":8000},"driver":{"max":2000},"condition":{"max":1000},"kind":{"values":["reject","choose","require","accept"]}}
 const FLAGS = [{"kind":"email address","source":"(?<![A-Z0-9._%+-])[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]+\\.[A-Z]{2,}\\b","flags":"i"},{"kind":"private or identifying URL","source":"\\bhttps?:\\/\\/\\S+","flags":"i"},{"kind":"credential or secret","source":"\\b(?:api[_ -]?key|secret|password)\\b\\s*[:=]|(?<![\\p{L}\\p{N}_])(?:секретн\\p{L}*\\s+ключ\\p{L}*|ключ\\s+доступа|парол\\p{L}*)\\s*[:=]|\\btoken\\b\\s*[:=]\\s*[\"'\\u0060]?[A-Za-z0-9_\\-./+]{12,}|(?<![\\p{L}\\p{N}_])токен\\p{L}*\\s*[:=]\\s*[\"'\\u0060]?[A-Za-z0-9_\\-./+]{12,}|\\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\\bavk_[A-Za-z0-9_-]{16,}","flags":"iu"},{"kind":"ticket or repository identifier","source":"\\b(?:JIRA|ticket|issue|PR|repo(?:sitory)?)\\b\\s*(?:#|:)\\s*[A-Z0-9_-]{2,}\\b","flags":"i"},{"kind":"NDA or confidential marker","source":"\\b(?:strictly private|internal only|internal use only)\\b|\\bCONFIDENTIAL\\b|(?<![\\p{L}\\p{N}_])КОНФИДЕНЦИАЛЬНО(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])СЕКРЕТНО(?![\\p{L}\\p{N}_])|\\b(?:this|that|our|their|the client'?s|the customer'?s)\\s+(?:\\w+\\s+){0,2}(?:NDA|confidentiality agreement)\\b|\\bunder (?:an )?NDA with\\b","flags":"u"},{"kind":"phone number","source":"(?!\\d{1,3}(?:[ \\u00A0\\u202F.]\\d{3}){2,}(?![\\s().-]*\\d))(?<!\\d)(?!(?:\\d{1,2}[./]\\d{1,2}[./](?:\\d{4}|\\d{2})|\\d{4}[-./]\\d{1,2}[-./]\\d{1,2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./])\\d{1,2}[./](?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./]\\d{1,2}[./])(?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./])\\d{1,2}[-./]\\d{1,2}(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./]\\d{1,2}[-./])\\d{1,2}(?![./]?\\d))(?:\\+\\d{1,3}[\\s().-]*)?(?:\\d[\\s().-]*){9,}","flags":""},{"kind":"passport or national-id marker","source":"(?<![\\p{L}\\p{N}_])(?:паспорт\\p{L}*|passport|ssn)(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"secret or confidential (RU)","source":"(?<![\\p{L}\\p{N}_])(?:эт(?:от|а|у|ой|ом)|наш\\p{L}*|их|клиентск\\p{L}*)\\s+(?:\\p{L}+\\s+){0,2}(?:НДА|соглашени\\p{L}*\\s+о\\s+неразглашении)(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:строго\\s+конфиденциальн\\p{L}*|только\\s+для\\s+внутреннего\\s+использования)(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"sensitive structure (card number, contact or credential shape)","source":"(\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}|(?<![\\w.+-])[\\w.+-]{1,64}@[\\w-]+\\.[\\w.]{2,}|(?!\\d{1,3}(?:[ \\u00A0\\u202F.]\\d{3}){2,}(?![\\s().-]*\\d))(?<!\\d)(?!(?:\\d{1,2}[./]\\d{1,2}[./](?:\\d{4}|\\d{2})|\\d{4}[-./]\\d{1,2}[-./]\\d{1,2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./])\\d{1,2}[./](?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./]\\d{1,2}[./])(?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./])\\d{1,2}[-./]\\d{1,2}(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./]\\d{1,2}[-./])\\d{1,2}(?![./]?\\d))\\+?\\d[\\d\\s()-]{9,}\\d|password\\s*[:=]|api[_-]?key\\s*[:=])","flags":"i"},{"kind":"passport or secret marker","source":"(?<![\\p{L}\\p{N}_])(?:паспорт\\p{L}*|passport|ssn|секретн\\p{L}*)(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"names avva: keep it if it is a decision about your own product, strike it if it is about running this extraction","source":"(?<![\\p{L}\\p{N}_])avva(?![\\p{L}\\p{N}_])|\\b(?:mcp[- ]studio|begin_extraction|submit_decisions|submit_model)\\b|\\bdecision[- ]model platform\\b|платформ\\p{L}*\\s+(?:для\\s+)?модел\\p{L}*\\s+решений","flags":"iu"}].map((f) => ({ kind: f.kind, re: new RegExp(f.source, f.flags) }))
-const STRINGS = {"en":{"title":"Approval sheet","nothingSent":"Nothing has been sent to avva yet.","exactly":"These exact records are what would be sent if you approve, and nothing else: no struck items, no documents, none of the rest of your history.","placeholders":"Names, clients, repositories, ticket ids, private URLs and deal amounts are replaced with bracketed placeholders; policy thresholds stay, because they are rules, not identifiers.","notStored":"The approved text builds the draft and is not stored by avva. This file is the record; the flags below are hints.","whatIsRecord":"What a record is","definition":"One decision you made, as a stranger could recognize it: the situation (what was on the table and what pulled the other way), what you ruled, the reason you stated, the condition that limited it, and what kind of call it was. In your own words, from a source the assistant read.","firstRecord":"The first record, in full","groups":"Groups by origin","group":"group","records":"records","noOrigin":"no origin label","outsideRange":"outside your range","instructions":"instructions, not calls","instructionsFrame":"No alternative and no reason on record for these. They stay unless you strike the group; keep or strike single ones by number.","rangeRead":"Range read as {from} to {to}; dated records outside it are in their own group.","rangeUnread":"The range \"{range}\" could not be read as dates, so no outside-range group was built.","exceptions":"Least-sure records, in full","exceptionsFrame":"The records the assistant is least sure are clean after redaction. They are the least-sure ones, not the only risky ones; the full list below is the record.","exceptionsCap":"Capped at {cap}: {n} more were named and are not shown here.","noExceptions":"The assistant named none.","against":"Against the default — {k} of {n}","againstFrame":"The records where your call went against what the assistant, or a competent stranger in your field, would have advised from the situation alone. They are the part a buyer’s own AI cannot give them; the ordinary records beside them stay in full, as the other half of how you decide. The mark is the assistant’s reading, not a field: it is not sent.","offDomain":"outside the domain you named","offDomainFrame":"The assistant’s reading: these may sit outside the domain this model is for. They stay unless you strike the group; keep or strike single ones by number.","noReason":"No reason in the source — {k} of {n}","noReasonAsk":"If you remember why for any of these, say it in a few words: the assistant adds it to that record in your words and shows it to you again. Skip any you don’t; a call with no recorded reason still goes in, and the model says the reason was not recorded.","moreRecords":"Showing records {from} to {to} of {n} in full. Ask for any other number, or the next block.","noAgainst":"The assistant marked none.","againstMark":"against the default","flags":"Mechanical flags","flagsFrame":"Pattern matches, the same ones avva runs at publish, plus a check for records about avva itself. A match is a reason to look, not a verdict; what a shape still gives away is the assistant’s call.","noFlags":"No pattern matched.","question":"Send these {n} to avva? Their text builds the draft and is not stored. Strike by group or by number.","allRecords":"All records, in full","number":"No.","date":"date","sourceKind":"source","origin":"origin","recordTitle":"title","context":"situation","decision":"decision","driver":"reason","condition":"condition","kind":"kind","empty":"—"},"ru":{"title":"Лист согласования","nothingSent":"В avva пока ничего не отправлено.","exactly":"Если вы одобрите, будут отправлены ровно эти записи и ничего больше: ни вычеркнутое, ни документы, ни остальная история.","placeholders":"Имена, клиенты, репозитории, номера задач, приватные ссылки и суммы сделок заменены на заполнители в скобках; пороги и правила остаются, потому что это правила, а не идентификаторы.","notStored":"Одобренный текст строит черновик и не хранится в avva. Этот файл и есть запись; флаги ниже лишь подсказки.","whatIsRecord":"Что такое запись","definition":"Одно ваше решение, которое узнал бы посторонний: ситуация (что предлагалось и что тянуло в другую сторону), что вы решили, названная причина, условие, которое ограничивало решение, и какого рода это было решение. Вашими словами, из источника, который прочитал ассистент.","firstRecord":"Первая запись целиком","groups":"Группы по источнику","group":"группа","records":"записей","noOrigin":"без метки источника","outsideRange":"вне вашего диапазона","instructions":"инструкции, не решения","instructionsFrame":"В источнике у них нет ни альтернативы, ни причины. Они остаются, если вы не вычеркнете группу; отдельные можно оставить или вычеркнуть по номеру.","rangeRead":"Диапазон прочитан как {from} — {to}; датированные записи вне его вынесены в отдельную группу.","rangeUnread":"Диапазон «{range}» не удалось прочитать как даты, поэтому группа вне диапазона не построена.","exceptions":"Записи, в которых ассистент уверен меньше всего, целиком","exceptionsFrame":"Записи, в чистоте которых после редактирования ассистент уверен меньше всего. Это наименее надёжные, а не единственные рискованные; полный список ниже и есть запись.","exceptionsCap":"Ограничено {cap}: ещё {n} названы, но здесь не показаны.","noExceptions":"Ассистент не назвал ни одной.","against":"Против очевидного — {k} из {n}","againstFrame":"Записи, где вы решили не так, как посоветовал бы ассистент или грамотный посторонний из вашей области, видя одну ситуацию. Это та часть, которую ИИ покупателя сам не даст; обычные записи рядом с ними остаются целиком — это вторая половина того, как вы решаете. Пометка — прочтение ассистента, а не поле: она не отправляется.","offDomain":"вне названного вами домена","offDomainFrame":"Прочтение ассистента: эти записи, возможно, не относятся к домену модели. Они остаются, если вы не вычеркнете группу; отдельные можно оставить или вычеркнуть по номеру.","noReason":"Причины нет в источнике — {k} из {n}","noReasonAsk":"Если помните, почему решили так в каких-то из них, скажите в двух словах: ассистент допишет это в запись вашими словами и покажет её снова. Остальные пропустите; решение без записанной причины всё равно войдёт, и модель скажет, что причина не записана.","moreRecords":"Целиком показаны записи с {from} по {to} из {n}. Попросите любой другой номер или следующий блок.","noAgainst":"Ассистент не пометил ни одной.","againstMark":"против очевидного","flags":"Механические флаги","flagsFrame":"Совпадения с шаблонами — теми же, что avva проверяет при публикации, — и проверка на записи о самой avva. Совпадение — повод посмотреть, а не вердикт; что ещё выдаёт форма записи, решает ассистент.","noFlags":"Ни один шаблон не сработал.","question":"Отправить эти {n} в avva? Их текст строит черновик и не хранится. Вычёркивайте группами или по номерам.","allRecords":"Все записи целиком","number":"№","date":"дата","sourceKind":"источник","origin":"откуда","recordTitle":"название","context":"ситуация","decision":"решение","driver":"причина","condition":"условие","kind":"род","empty":"—"}}
+const STRINGS = {"en":{"title":"Approval sheet","nothingSent":"Nothing has been sent to avva yet.","exactly":"These exact records are what would be sent if you approve, and nothing else: no struck items, no documents, none of the rest of your history.","placeholders":"Names, clients, repositories, ticket ids, private URLs and deal amounts are replaced with bracketed placeholders; policy thresholds stay, because they are rules, not identifiers — but a client’s own targets or a pilot’s acceptance criteria agreed with one client are that engagement’s, and are among the least-sure records below.","notStored":"The approved text builds the draft and is not stored by avva. This file is the record; the flags below are hints.","whatIsRecord":"What a record is","definition":"One decision you made, as a stranger could recognize it: the situation (what was on the table and what pulled the other way), what you ruled, the reason you stated, the condition that limited it, and what kind of call it was. In your own words, from a source the assistant read.","firstRecord":"The first record, in full","groups":"Groups by origin","group":"group","records":"records","noOrigin":"no origin label","outsideRange":"outside your range","instructions":"instructions, not calls","instructionsFrame":"No alternative and no reason on record for these. They stay unless you strike the group; keep or strike single ones by number.","rangeRead":"Range read as {from} to {to}; dated records outside it are in their own group.","rangeUnread":"The range \"{range}\" could not be read as dates, so no outside-range group was built.","exceptions":"Least-sure records, in full","exceptionsFrame":"The records the assistant is least sure are clean after redaction. They are the least-sure ones, not the only risky ones; the full list below is the record.","exceptionsCap":"Capped at {cap}: {n} more were named and are not shown here.","noExceptions":"The assistant named none.","against":"Against the default — {k} of {n}","againstFrame":"The records where your call went against what the assistant, or a competent stranger in your field, would have advised from the situation alone. They are the part a buyer’s own AI cannot give them; the ordinary records beside them stay in full, as the other half of how you decide. The mark is the assistant’s reading, not a field: it is not sent.","offDomain":"outside the domain you named","offDomainFrame":"The assistant’s reading: these may sit outside the domain this model is for. They stay unless you strike the group; keep or strike single ones by number.","noReason":"No reason in the source — {k} of {n}","noReasonAsk":"If you remember why for any of these, say it in a few words: the assistant adds it to that record in your words and shows it to you again. Skip any you don’t; a call with no recorded reason still goes in, and the model says the reason was not recorded.","moreRecords":"Showing records {from} to {to} of {n} in full. Ask for any other number, or the next block.","elsewhere":"{k} more listed in other groups","changed":"Changed since you approved them — {k}","changedFrame":"Each changed field, as you approved it and as it would be sent now. Nothing here is sent before you say yes; a change you strike keeps the version you approved.","added":"New since you approved — {k}","removedSince":"In the approved file and not in this one — {k}","before":"before","after":"after","noChanges":"Nothing changed since you approved it.","noAgainst":"The assistant marked none.","againstMark":"against the default","flags":"Mechanical flags","flagsFrame":"Pattern matches, the same ones avva runs at publish, plus a check for records about avva itself. A match is a reason to look, not a verdict; what a shape still gives away is the assistant’s call.","noFlags":"No pattern matched.","question":"Send these {n} to avva? Their text builds the draft and is not stored. Strike by group or by number.","allRecords":"All records, in full","number":"No.","date":"date","sourceKind":"source","origin":"origin","recordTitle":"title","context":"situation","decision":"decision","driver":"reason","condition":"condition","kind":"kind","empty":"—"},"ru":{"title":"Лист согласования","nothingSent":"В avva пока ничего не отправлено.","exactly":"Если вы одобрите, будут отправлены ровно эти записи и ничего больше: ни вычеркнутое, ни документы, ни остальная история.","placeholders":"Имена, клиенты, репозитории, номера задач, приватные ссылки и суммы сделок заменены на заполнители в скобках; пороги и правила остаются, потому что это правила, а не идентификаторы, — но цели клиента или критерии приёмки пилота, согласованные с одним клиентом, принадлежат этой работе и стоят среди записей, в которых ассистент уверен меньше всего.","notStored":"Одобренный текст строит черновик и не хранится в avva. Этот файл и есть запись; флаги ниже лишь подсказки.","whatIsRecord":"Что такое запись","definition":"Одно ваше решение, которое узнал бы посторонний: ситуация (что предлагалось и что тянуло в другую сторону), что вы решили, названная причина, условие, которое ограничивало решение, и какого рода это было решение. Вашими словами, из источника, который прочитал ассистент.","firstRecord":"Первая запись целиком","groups":"Группы по источнику","group":"группа","records":"записей","noOrigin":"без метки источника","outsideRange":"вне вашего диапазона","instructions":"инструкции, не решения","instructionsFrame":"В источнике у них нет ни альтернативы, ни причины. Они остаются, если вы не вычеркнете группу; отдельные можно оставить или вычеркнуть по номеру.","rangeRead":"Диапазон прочитан как {from} — {to}; датированные записи вне его вынесены в отдельную группу.","rangeUnread":"Диапазон «{range}» не удалось прочитать как даты, поэтому группа вне диапазона не построена.","exceptions":"Записи, в которых ассистент уверен меньше всего, целиком","exceptionsFrame":"Записи, в чистоте которых после редактирования ассистент уверен меньше всего. Это наименее надёжные, а не единственные рискованные; полный список ниже и есть запись.","exceptionsCap":"Ограничено {cap}: ещё {n} названы, но здесь не показаны.","noExceptions":"Ассистент не назвал ни одной.","against":"Против очевидного — {k} из {n}","againstFrame":"Записи, где вы решили не так, как посоветовал бы ассистент или грамотный посторонний из вашей области, видя одну ситуацию. Это та часть, которую ИИ покупателя сам не даст; обычные записи рядом с ними остаются целиком — это вторая половина того, как вы решаете. Пометка — прочтение ассистента, а не поле: она не отправляется.","offDomain":"вне названного вами домена","offDomainFrame":"Прочтение ассистента: эти записи, возможно, не относятся к домену модели. Они остаются, если вы не вычеркнете группу; отдельные можно оставить или вычеркнуть по номеру.","noReason":"Причины нет в источнике — {k} из {n}","noReasonAsk":"Если помните, почему решили так в каких-то из них, скажите в двух словах: ассистент допишет это в запись вашими словами и покажет её снова. Остальные пропустите; решение без записанной причины всё равно войдёт, и модель скажет, что причина не записана.","moreRecords":"Целиком показаны записи с {from} по {to} из {n}. Попросите любой другой номер или следующий блок.","elsewhere":"ещё {k} в других группах","changed":"Изменено после вашего одобрения — {k}","changedFrame":"Каждое изменённое поле: как вы его одобрили и как оно ушло бы сейчас. Ничего отсюда не отправляется до вашего «да»; вычеркнутое изменение оставляет одобренную версию.","added":"Новое после вашего одобрения — {k}","removedSince":"Есть в одобренном файле, нет в этом — {k}","before":"было","after":"стало","noChanges":"После вашего одобрения ничего не изменилось.","noAgainst":"Ассистент не пометил ни одной.","againstMark":"против очевидного","flags":"Механические флаги","flagsFrame":"Совпадения с шаблонами — теми же, что avva проверяет при публикации, — и проверка на записи о самой avva. Совпадение — повод посмотреть, а не вердикт; что ещё выдаёт форма записи, решает ассистент.","noFlags":"Ни один шаблон не сработал.","question":"Отправить эти {n} в avva? Их текст строит черновик и не хранится. Вычёркивайте группами или по номерам.","allRecords":"Все записи целиком","number":"№","date":"дата","sourceKind":"источник","origin":"откуда","recordTitle":"название","context":"ситуация","decision":"решение","driver":"причина","condition":"условие","kind":"род","empty":"—"}}
 const EXCEPTIONS_CAP = 15
 const FULL_TEXT_CAP = 40
 const BLOCK = 10
@@ -129,7 +129,7 @@ function fail(lines) {
 }
 
 const args = process.argv.slice(2)
-const opts = { range: '', lang: '', exceptions: '', against: '', instructions: '', 'off-domain': '', records: '' }
+const opts = { range: '', lang: '', exceptions: '', against: '', instructions: '', 'off-domain': '', records: '', before: '' }
 // The sheet is a FILE only when asked for. By default this prints the records
 // to stdout so the assistant can put them in the chat verbatim: what the user
 // reads is then rendered from the json by this script, not retyped by a model,
@@ -138,14 +138,14 @@ let wantsFile = false
 let jsonPath = ''
 for (let i = 0; i < args.length; i += 1) {
   const a = args[i]
-  if (['--range', '--lang', '--exceptions', '--against', '--instructions', '--off-domain', '--records'].includes(a)) {
+  if (['--range', '--lang', '--exceptions', '--against', '--instructions', '--off-domain', '--records', '--before'].includes(a)) {
     opts[a.slice(2)] = String(args[i + 1] ?? '')
     i += 1
   } else if (a === '--sheet') wantsFile = true
   else if (a.startsWith('--')) fail(['unknown option ' + a])
   else jsonPath = a
 }
-if (!jsonPath) fail(['usage: node render-sheet.mjs <avva-decisions-*.json> [--sheet] [--range "<words>"] [--exceptions 3,7] [--against 2,5] [--instructions 4,9] [--off-domain 6] [--records 11-20] [--lang ru|en]'])
+if (!jsonPath) fail(['usage: node render-sheet.mjs <avva-decisions-*.json> [--sheet] [--range "<words>"] [--exceptions 3,7] [--against 2,5] [--instructions 4,9] [--off-domain 6] [--records 11-20] [--before <the approved json>] [--lang ru|en]'])
 
 let parsed
 try {
@@ -204,6 +204,40 @@ const lang = opts.lang === 'ru' || opts.lang === 'en' ? opts.lang : cyrillic(sam
 if (opts.lang && opts.lang !== lang) fail(['--lang must be ru or en'])
 const S = STRINGS[lang]
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => String(values[key]))
+
+// A rebuild, or any change to records the user already approved: the
+// approved file stays as it is, the changes live in a working copy, and the
+// sheet shows each changed field before and after. Matched on what does not
+// change when a record is enriched (date, title, source, origin), then on
+// position; a record matched wrongly shows as changed, never as unchanged.
+let before = null
+if (opts.before) {
+  let raw
+  try {
+    raw = JSON.parse(readFileSync(opts.before, 'utf8'))
+  } catch (error) {
+    fail(['cannot read ' + opts.before + ': ' + (error && error.message)])
+  }
+  before = Array.isArray(raw) ? raw : Array.isArray(raw?.decisions) ? raw.decisions : Array.isArray(raw?.episodes) ? raw.episodes : null
+  if (!before || before.some((r) => !r || typeof r !== 'object' || Array.isArray(r))) fail(['--before must be the approved json: an array of records'])
+}
+const LABELS = { title: S.recordTitle, date: S.date, sourceType: S.sourceKind, origin: S.origin, context: S.context, decision: S.decision, driver: S.driver, condition: S.condition, kind: S.kind }
+const keyOf = (r) => JSON.stringify([r.date || '', r.title || '', r.sourceType || '', r.origin || ''])
+const changes = { changed: [], added: [], removed: [] }
+if (before) {
+  const used = new Set()
+  records.forEach((record, index) => {
+    let j = before.findIndex((b, bi) => !used.has(bi) && keyOf(b) === keyOf(record))
+    if (j < 0 && index < before.length && !used.has(index)) j = index
+    if (j < 0) return changes.added.push(index)
+    used.add(j)
+    const fields = Object.keys(FIELDS).filter((key) => String(before[j][key] ?? '') !== String(record[key] ?? ''))
+    if (fields.length) changes.changed.push({ index, from: before[j], fields })
+  })
+  before.forEach((b, bi) => {
+    if (!used.has(bi)) changes.removed.push(b)
+  })
+}
 
 const range = opts.range ? parseDateRange(opts.range) : null
 const outside = (record) => {
@@ -274,9 +308,13 @@ const call = (record) => {
   const words = String(record.decision).trim().split(/\s+/)
   return words.slice(0, CALL_WORDS).join(' ') + (words.length > CALL_WORDS ? '…' : '')
 }
-const line = (index) => {
+// Listed outside its origin's own group, a line names the origin: striking an
+// origin strikes every record that carries it, and a client's record in the
+// instructions or off-domain group must still read as that client's.
+const line = (index, withOrigin = false) => {
   const record = records[index]
-  return (index + 1) + '. ' + (record.date || S.empty) + ' — ' + call(record) + (against.has(index + 1) ? ' · ' + S.againstMark : '')
+  const origin = withOrigin ? (String(record.origin || '').trim() || S.noOrigin) + ' — ' : ''
+  return (index + 1) + '. ' + (record.date || S.empty) + ' — ' + origin + call(record) + (against.has(index + 1) ? ' · ' + S.againstMark : '')
 }
 const full = (index) => {
   const r = records[index]
@@ -316,7 +354,55 @@ if (opts.records) {
 }
 const shown = (index) => index + 1 >= shownFrom && index + 1 <= shownTo
 
-const table = ['| ' + S.group + ' | ' + S.records + ' |', '| --- | --- |', ...[...groups].map(([label, members]) => '| ' + label + ' | ' + members.length + ' |')].join('\n')
+const special = new Set([S.instructions, S.offDomain, S.outsideRange])
+const byOrigin = new Map()
+for (const record of records) {
+  const origin = String(record.origin || '').trim() || S.noOrigin
+  byOrigin.set(origin, (byOrigin.get(origin) || 0) + 1)
+}
+const count = (label, members) => {
+  const elsewhere = special.has(label) ? 0 : (byOrigin.get(label) || 0) - members.length
+  return members.length + (elsewhere > 0 ? ' (' + fill(S.elsewhere, { k: elsewhere }) + ')' : '')
+}
+const orEmpty = (v) => (typeof v === 'string' && v.trim() ? v : S.empty)
+const allRecords = [
+  '## ' + S.allRecords,
+  '',
+  ...[...groups].flatMap(([label, members]) => {
+    const inView = members.filter(shown)
+    return inView.length ? ['### ' + label, '', ...inView.flatMap((index) => [full(index), ''])] : []
+  }),
+  ...(shownFrom > 1 || shownTo < records.length ? [fill(S.moreRecords, { from: shownFrom, to: shownTo, n: records.length }), ''] : []),
+]
+// Paging prints the requested records and nothing else: the questions were
+// asked once, with the sheet, and a page of records is not a second sheet.
+if (opts.records) {
+  console.log(allRecords.join('\n'))
+  process.exit(0)
+}
+const changeSection = before
+  ? [
+      '## ' + fill(S.changed, { k: changes.changed.length }),
+      '',
+      S.changedFrame,
+      '',
+      ...(changes.changed.length
+        ? changes.changed.flatMap(({ index, from, fields }) => [
+            '### ' + (index + 1) + '. ' + orEmpty(records[index].title),
+            ...fields.flatMap((key) => ['- ' + LABELS[key] + ':', '  - ' + S.before + ': ' + orEmpty(from[key]), '  - ' + S.after + ': ' + orEmpty(records[index][key])]),
+            '',
+          ])
+        : [S.noChanges, '']),
+      '## ' + fill(S.added, { k: changes.added.length }),
+      '',
+      ...changes.added.flatMap((index) => [full(index), '']),
+      ...(changes.removed.length
+        ? ['## ' + fill(S.removedSince, { k: changes.removed.length }), '', ...changes.removed.map((r) => '- ' + (r.date || S.empty) + ' — ' + (String(r.origin || '').trim() || S.noOrigin) + ' — ' + call(r)), '']
+        : []),
+    ]
+  : null
+
+const table = ['| ' + S.group + ' | ' + S.records + ' |', '| --- | --- |', ...[...groups].map(([label, members]) => '| ' + label + ' | ' + count(label, members) + ' |')].join('\n')
 const rangeLine = opts.range ? (range ? fill(S.rangeRead, range) : fill(S.rangeUnread, { range: opts.range })) : ''
 
 const md = [
@@ -341,12 +427,12 @@ const md = [
   ...(rangeLine ? [rangeLine, ''] : []),
   table,
   '',
-  ...[...groups].flatMap(([label, members]) => ['### ' + label + ' — ' + members.length, '', ...(label === S.instructions ? [S.instructionsFrame, ''] : label === S.offDomain ? [S.offDomainFrame, ''] : []), ...members.map(line), '']),
+  ...[...groups].flatMap(([label, members]) => ['### ' + label + ' — ' + count(label, members), '', ...(label === S.instructions ? [S.instructionsFrame, ''] : label === S.offDomain ? [S.offDomainFrame, ''] : []), ...members.map((index) => line(index, special.has(label))), '']),
   '## ' + fill(S.against, { k: against.size, n: records.length }),
   '',
   S.againstFrame,
   '',
-  ...(against.size ? [...against].sort((a, b) => a - b).map((n) => line(n - 1)) : [S.noAgainst]),
+  ...(against.size ? [...against].sort((a, b) => a - b).map((n) => line(n - 1, true)) : [S.noAgainst]),
   '',
   '## ' + S.exceptions,
   '',
@@ -360,13 +446,7 @@ const md = [
   '',
   ...(flags.length ? flags.map((f) => '- ' + f.n + ' — ' + f.kind + ' (' + f.field + ')') : [S.noFlags]),
   '',
-  '## ' + S.allRecords,
-  '',
-  ...[...groups].flatMap(([label, members]) => {
-    const inView = members.filter(shown)
-    return inView.length ? ['### ' + label, '', ...inView.flatMap((index) => [full(index), ''])] : []
-  }),
-  ...(shownFrom > 1 || shownTo < records.length ? [fill(S.moreRecords, { from: shownFrom, to: shownTo, n: records.length }), ''] : []),
+  ...(changeSection ?? allRecords),
   // The ask for missing reasons and the approval question close the sheet, in
   // one message, after the records they are about: the question used to print
   // above "All records", asking before the reading it depends on.
