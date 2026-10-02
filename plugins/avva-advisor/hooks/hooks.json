@@ -1,5 +1,5 @@
 {
-  "description": "avva advisor 0.6.0: before git push, fetch the connected avva expert's review packet for what the push sends, and hold the push until it is re-run with the marker the hook prints.",
+  "description": "avva advisor 0.6.1: before git push, fetch the connected avva expert's review packet for what the push sends, and hold the push until it is re-run with the marker the hook prints.",
   "hooks": {
     "PreToolUse": [
       {

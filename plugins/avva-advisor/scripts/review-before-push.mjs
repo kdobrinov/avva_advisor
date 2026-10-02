@@ -841,7 +841,7 @@ try {
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': ci ? 'advisor-hook-ci/0.6.0' : 'advisor-hook/0.6.0',
+      'x-avva-client': ci ? 'advisor-hook-ci/0.6.1' : 'advisor-hook/0.6.1',
       ...(server.headers || {}),
     },
     body: JSON.stringify(body),
