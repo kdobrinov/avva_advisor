@@ -45,7 +45,7 @@ that commit from your index and work tree. It cannot see what another program
 changes before a commit, or what `git add <paths>`, an amend or a pull will
 do, so it holds such a command and asks for that step on its own first. A dry
 run and a deletion send nothing and go through. On a connection without a
-key, each packet spends the trial allowance (40 consults a day, per model). With more
+key, each packet spends the trial allowance (40 requests a day, per model). With more
 than one expert connected, it uses the project's over your user-wide one and
 names the expert it chose. In CI it says so in its request, so a pipeline's
 pushes are counted apart from yours.
