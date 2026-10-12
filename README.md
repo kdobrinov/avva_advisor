@@ -56,9 +56,13 @@ pushes are counted apart from yours.
 gemini extensions install https://github.com/kdobrinov/avva_advisor
 ```
 
-The extension ships the same cadence as a `GEMINI.md` context file. No
-hook: Gemini CLI has a hook surface, but the way an extension ships one has
-not been run here, and this repository prints only what was run.
+For accounts that still run Gemini CLI: Standard and Enterprise Code
+Assist licenses and paid Gemini API keys. Google moved personal accounts to
+Antigravity CLI on June 18, 2026; Antigravity reads the `.agents/mcp_config.json`
+snippet an expert's page prints. The extension ships the same cadence as a
+`GEMINI.md` context file. No hook: Gemini CLI has a hook surface, but the way
+an extension ships one has not been run here, and this repository prints only
+what was run.
 
 ## avva Studio (for experts building a model)
 

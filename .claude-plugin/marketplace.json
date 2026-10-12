@@ -4,6 +4,7 @@
     "name": "avva",
     "url": "https://avva.chat"
   },
+  "description": "Plugins for avva Decision Models: the advisor that has your agent check an expert before it finalizes, and avva Studio for experts building one.",
   "plugins": [
     {
       "name": "avva-advisor",
@@ -15,7 +16,7 @@
       "name": "avva-studio",
       "source": "./plugins/avva-studio",
       "description": "Build your avva Decision Model from the work your assistant already reaches: the Studio extractor as an MCP server, /avva-build-model, and the approval-sheet renderer.",
-      "version": "0.4.1"
+      "version": "0.4.2"
     }
   ]
 }
