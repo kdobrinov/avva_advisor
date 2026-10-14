@@ -64,7 +64,15 @@ const WORD_NUMBERS = {
 * can defend. `now` is injectable for tests.
 */
 function parseDateRange(words, now = new Date()) {
-	const text = words.trim().toLowerCase().replace(/\s+/g, " ");
+	/*
+	* A Russian range is usually said with "за" in front — "за год", "за два
+	* года", "за последний год" — and "полгода" / "полтора года" are one word
+	* each. The second real expert set "за год" (2026-10-14); unread, the
+	* receipt counted nothing outside it and the expert was never told. The
+	* preposition is dropped before the relative rule so "последний" is not
+	* read as a number word, and the two words become months.
+	*/
+	const text = words.trim().toLowerCase().replace(/\s+/g, " ").replace(/(^|\s)за\s+/gu, "$1").replace(/полтора\s+года/gu, "18 месяцев").replace(/полгода/gu, "6 месяцев");
 	if (!text) return null;
 	const today = day(now.getTime());
 	// "2024-01 to 2025-06", "2021..2023", "2022 – 2024"
@@ -93,6 +101,20 @@ function parseDateRange(words, now = new Date()) {
 		const n = raw === undefined ? 1 : /^\d+$/.test(raw) ? Number(raw) : WORD_NUMBERS[raw];
 		if (!n || n > 50) return null;
 		const unit = relative[2];
+		const ms = /^week|^недел/u.test(unit) ? 7 * 24 * 60 * 60 * 1e3 : /^month|^месяц/u.test(unit) ? MONTHS : YEARS;
+		return {
+			from: day(now.getTime() - n * ms),
+			to: today
+		};
+	}
+	// "год", "2 года", "18 months" — a bare span with no "last" in front, which is
+	// how "за год" and "за 18 месяцев" arrive once the preposition is dropped.
+	const bare = /^(?:(\d+|\p{L}+)\s+)?(years?|months?|weeks?|год\p{L}*|лет|месяц\p{L}*|недел\p{L}*)$/u.exec(text);
+	if (bare) {
+		const raw = bare[1];
+		const n = raw === undefined ? 1 : /^\d+$/.test(raw) ? Number(raw) : WORD_NUMBERS[raw];
+		if (!n || n > 50) return null;
+		const unit = bare[2];
 		const ms = /^week|^недел/u.test(unit) ? 7 * 24 * 60 * 60 * 1e3 : /^month|^месяц/u.test(unit) ? MONTHS : YEARS;
 		return {
 			from: day(now.getTime() - n * ms),
