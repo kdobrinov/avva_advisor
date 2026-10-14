@@ -2,13 +2,13 @@
 
 A connected avva expert is a standing reviewer, not a freelancer and not a chatbot. At call time no person is in the loop: each tool returns a verification packet; you apply it on your tokens, in this thread.
 
-Do not wait for the user to say "Use avva" or name the expert. If an avva MCP server is connected (name starts with `avva-`, not `avva-studio`), consult it on this cadence unprompted:
+Do not wait for the user to say "Use avva" or name the expert. If an avva MCP server is connected (name starts with `avva-`, not `avva-studio`), consult it on this cadence unprompted. Once, when you start work in the expert's domain, call `about_expert` before anything else: it returns how the expert works, where their model records it, and what a packet costs. Then:
 
 1. START of a task — `expert_questions` before locking an approach.
 2. WHILE working — `red_flag_check` on drafts, plans, and diffs (cheap gate).
 3. BEFORE finalizing or shipping anything significant — `review` with context + proposal. Follow the returned protocol exactly. The verdict comes first, then your delivery. If your verdict from the review packet is reject, revise before proceeding.
 4. A/B choices — `compare_options` (a stop rule of BLOCK severity disqualifies an option before the criteria are compared).
-5. Unsure this domain applies — `about_expert`.
+5. Unsure this domain applies — `about_expert` again.
 
 WHAT COUNTS AS A DECISION. The cadence has a floor, and without one it fires on a variable rename. Consult when the work could go wrong in a way this expert's domain covers AND the choice is not already obvious or trivially reversible. Do not consult on mechanical edits, formatting, renames, typo fixes, questions of fact, or anything you would not mention in a standup. Once per decision, not once per message: a cosmetic revision of a proposal already reviewed does not need a second `review`.
 
