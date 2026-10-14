@@ -86,6 +86,7 @@ on every expert's page — same cadence, pasted rather than installed.
 
 ## The cadence it installs
 
+- FIRST, once, as work in the expert's domain starts — `about_expert`, before `expert_questions`: how the expert works and what a packet costs.
 - START of a task — `expert_questions`, before locking an approach.
 - WHILE working — `red_flag_check` on drafts, plans and diffs.
 - BEFORE finalizing or shipping anything significant — `review` with context + proposal; your verdict comes first, then your delivery.
