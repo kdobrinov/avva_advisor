@@ -584,6 +584,18 @@ for (const [scope, entries] of scopes) {
 }
 if (!experts.length) allow('no avva expert MCP is connected in this project, so no review packet was fetched for this push')
 const { name, server, scope } = experts[0]
+// A user-wide expert alone does not hold the push. One expert connected for
+// every project reviews every repository on the machine with one person's
+// judgment — a product manager's model on a code diff, on every push — and
+// that turns the hook into noise and the review count into nothing (founder,
+// 2026-10-14). The project says whose judgment applies to it: local scope or
+// its .mcp.json. The note says so, and how.
+if (scope === 'every project (user scope)') {
+  allow(
+    name + ' is connected for every project (user scope), so this push is not held: a push hook that reviews every repository with one expert applies their judgment where it does not belong. ' +
+    'To have pushes in this project held, connect the expert for this project: run "claude mcp add --transport http ' + name + ' ' + server.url + '" here (local scope), or add it to the project\'s .mcp.json.',
+  )
+}
 // Which expert, and why that one: two connected experts used to mean the
 // first by key order, silently.
 const others = experts.slice(1).map((e) => e.name)
@@ -841,7 +853,7 @@ try {
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': ci ? 'advisor-hook-ci/0.6.3' : 'advisor-hook/0.6.3',
+      'x-avva-client': ci ? 'advisor-hook-ci/0.6.4' : 'advisor-hook/0.6.4',
       ...(server.headers || {}),
     },
     body: JSON.stringify(body),
