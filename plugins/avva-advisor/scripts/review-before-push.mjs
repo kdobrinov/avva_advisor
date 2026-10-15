@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Rendered by avvamcp scripts/render-advisor-repo.mjs from shared/advisor-hook.ts. Do not edit by hand.
-// PreToolUse on Bash: before a git push, fetch the connected avva expert's review packet for exactly what the push sends.
+// PreToolUse on Bash: before a git push, fetch the connected avva expert's review of exactly what the push sends.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -582,7 +582,7 @@ for (const [scope, entries] of scopes) {
     if (!experts.some((e) => e.name === name)) experts.push({ name, server: s, scope })
   }
 }
-if (!experts.length) allow('no avva expert MCP is connected in this project, so no review packet was fetched for this push')
+if (!experts.length) allow('no avva expert MCP is connected in this project, so this push was not reviewed')
 const { name, server, scope } = experts[0]
 // A user-wide expert alone does not hold the push. One expert connected for
 // every project reviews every repository on the machine with one person's
@@ -607,8 +607,8 @@ const chosen =
 const lost = unreadable ? { lost: 'the hook could not read this command', raw: command } : live.find((p) => p.lost)
 if (lost) {
   deny([
-    'avva: no review packet was fetched for this push: ' + lost.lost + '. This hook runs before any part of the command, so it cannot see what the push will send.',
-    'Run the steps before the push as their own command first, then the push on its own (' + lost.raw.trim() + '); the hook then fetches the packet for exactly what the push sends.',
+    'avva: this push was not reviewed: ' + lost.lost + '. This hook runs before any part of the command, so it cannot see what the push will send.',
+    'Run the steps before the push as their own command first, then the push on its own (' + lost.raw.trim() + '); the hook then reviews exactly what the push sends.',
   ])
 }
 
@@ -761,10 +761,10 @@ for (const push of live) {
   }
 }
 const notReviewed = unknown.length ? 'Not reviewed, because the hook cannot tell what it sends: ' + unknown.join('; ') + '.' : ''
-const notSimulated = skipped.size ? ' Not simulated: ' + [...skipped].join(', ') + ' runs before the push, and anything it commits is not in this packet.' : ''
+const notSimulated = skipped.size ? ' Not simulated: ' + [...skipped].join(', ') + ' runs before the push, and anything it commits is not in this review.' : ''
 if (!reviewed.length) {
   const parts = [
-    notReviewed && 'no review packet was fetched for this push. ' + notReviewed,
+    notReviewed && 'this push was not reviewed. ' + notReviewed,
     nothing.length && 'nothing outgoing to review for ' + nothing.join(', ') + ': the remote already has it.',
     deletes.length && 'this push deletes ' + deletes.join(', ') + ', and a deletion has nothing to review.',
   ].filter(Boolean)
@@ -853,7 +853,7 @@ try {
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': ci ? 'advisor-hook-ci/0.6.4' : 'advisor-hook/0.6.4',
+      'x-avva-client': ci ? 'advisor-hook-ci/0.6.5' : 'advisor-hook/0.6.5',
       ...(server.headers || {}),
     },
     body: JSON.stringify(body),
@@ -873,19 +873,19 @@ try {
 if (!packet) {
   allow(
     (refusal
-      ? name + ' refused the request, so no review packet was fetched for this push. It said: ' + refusal
-      : name + ' did not answer, so no review packet was fetched for this push') + (notReviewed ? ' ' + notReviewed : ''),
+      ? name + ' refused the request, so this push was not reviewed. It said: ' + refusal
+      : name + ' did not answer, so this push was not reviewed') + (notReviewed ? ' ' + notReviewed : ''),
   )
 }
 
 const shown = unsent.slice(0, 40).join(', ') + (unsent.length > 40 ? ' and ' + (unsent.length - 40) + ' more' : '')
 const opener = /^\s*[({!]/.test(command) ? 'AVVA_APPLIED=' + digest + ' true && ' : 'AVVA_APPLIED=' + digest + ' '
 deny([
-  'avva: fetched ' + name + "'s review packet for " + portion + ' (' + digest + '). Nothing has judged this diff yet: apply the packet, put your verdict first, then revise, or push the same diff again with the marker below.',
+  'avva: fetched ' + name + "'s review of " + portion + ' (' + digest + '). Nothing has judged this diff yet: apply that review, put your verdict first, then revise, or push the same diff again with the marker below.',
   'Pushing: ' + pushing + '.' + notSimulated,
   'Packet from ' + chosen + '.',
-  ...(partly ? ['Sent only in part: ' + partly + '. Apply the same packet to the rest of it yourself before pushing.'] : []),
-  ...(unsent.length ? ['Not sent: ' + shown + '. Apply the same packet to these files yourself before pushing.'] : []),
+  ...(partly ? ['Sent only in part: ' + partly + '. Apply the same review to the rest of it yourself before pushing.'] : []),
+  ...(unsent.length ? ['Not sent: ' + shown + '. Apply the same review to these files yourself before pushing.'] : []),
   ...(notReviewed ? [notReviewed] : []),
   'If your verdict is reject, revise before pushing. Otherwise push the same diff again with the marker in front:',
   '  ' + opener + command,

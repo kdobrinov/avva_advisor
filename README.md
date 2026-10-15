@@ -29,8 +29,8 @@ its own) and `/avva-review`, for when you want the expert on something right
 now.
 
 It also installs a hook. Before a `git push`, it works out what that push
-sends, fetches the connected expert's `review` packet for it, and holds the
-push: your agent applies the packet, puts its verdict first, and pushes the
+sends, asks the connected expert's model to review it, and holds the
+push: your agent applies that review, puts its verdict first, and pushes the
 same diff again with the marker the hook prints. The hook judges nothing —
 the verdict is your agent's. It lets the push through, with a note, when no
 expert is connected in the project, when the server does not answer or
@@ -45,7 +45,7 @@ that commit from your index and work tree. It cannot see what another program
 changes before a commit, or what `git add <paths>`, an amend or a pull will
 do, so it holds such a command and asks for that step on its own first. A dry
 run and a deletion send nothing and go through. On a connection without a
-key, each packet spends the trial allowance (40 requests a day, per model). It holds a
+key, each review spends the trial allowance (40 requests a day, per model). It holds a
 push only for an expert connected for THIS project (local scope or its
 `.mcp.json`): a user-wide expert alone reviews nothing on push, and the
 hook says so once and how to connect the expert for the project. With more
@@ -74,10 +74,10 @@ what was run.
 ```
 
 Installs the Studio extractor as an MCP server, `/avva-build-model <domain> |
-<name> | [range] | [only]`, and a script that renders the approval sheet
-from the decisions file on your disk, so what you read is what is sent. The
-brief itself comes from `begin_extraction`; the plugin adds tooling, not a
-second brief.
+<name> | [range] | [only]`, and a script that prints every record for you to
+approve from the decisions file on your disk, so what you read is what is
+sent. The instructions themselves come from avva Studio; the plugin adds
+tooling, not a second set of them.
 
 ## Other clients
 
@@ -86,7 +86,7 @@ on every expert's page — same cadence, pasted rather than installed.
 
 ## The cadence it installs
 
-- FIRST, once, as work in the expert's domain starts — `about_expert`, before `expert_questions`: how the expert works and what a packet costs.
+- FIRST, once, as work in the expert's domain starts — `about_expert`, before `expert_questions`: how the expert works and what a review costs.
 - START of a task — `expert_questions`, before locking an approach.
 - WHILE working — `red_flag_check` on drafts, plans and diffs.
 - BEFORE finalizing or shipping anything significant — `review` with context + proposal; your verdict comes first, then your delivery.
@@ -96,9 +96,9 @@ on every expert's page — same cadence, pasted rather than installed.
 
 - Consults once per decision, not once per message.
 - Stays quiet on mechanical work: renames, typo fixes, formatting, anything
-  trivially reversible. The push hook is the exception: it fetches a packet
-  for every push that sends something, mechanical or not.
-- Errs toward calling: a packet you did not need costs some context; a
+  trivially reversible. The push hook is the exception: it asks for a review
+  of every push that sends something, mechanical or not.
+- Errs toward calling: a review you did not need costs some context; a
   decision finalized without one is the failure this advisor exists to prevent.
 - Does nothing when no avva expert MCP is connected.
 

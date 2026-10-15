@@ -1,6 +1,6 @@
 ---
 name: avva-studio
-description: Build or rebuild an avva Decision Model in avva Studio — the extraction procedure, the approval sheet and the bundled sheet renderer. Use whenever the user mentions avva, a decision model, avva Studio, extracting their decisions, or runs /avva-build-model.
+description: Build or rebuild an avva Decision Model in avva Studio — the procedure, the list of records you approve and the script that prints it. Use whenever the user mentions avva, a decision model, avva Studio, extracting their decisions, or runs /avva-build-model.
 ---
 
 # avva Studio: the procedure
