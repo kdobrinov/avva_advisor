@@ -81,12 +81,8 @@ tooling, not a second set of them.
 
 ## Other clients
 
-Cursor, Codex and plain CLAUDE.md / AGENTS.md setups take the standing note
-printed on every expert's page — same cadence, pasted rather than installed.
-In Codex the expert itself is a `[mcp_servers.<name>]` table in
-`~/.codex/config.toml`, and that file's first line is
-`tool_output_token_limit = 120000`: without it Codex
-keeps about 12,000 characters of an answer and drops the middle.
+Cursor and plain CLAUDE.md / AGENTS.md setups take the standing note printed
+on every expert's page — same cadence, pasted rather than installed.
 
 ## The cadence it installs
 
