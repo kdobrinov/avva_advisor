@@ -467,14 +467,14 @@ if (unknownList.length) {
 const unknownKeys = (record) => Object.keys(record).filter((key) => !(key in FIELDS))
 const asText = (value) => (typeof value === 'string' ? value : JSON.stringify(value))
 
-const cyrillic = (text) => (text.match(/\p{Script=Cyrillic}/gu) || []).length
-const latin = (text) => (text.match(/\p{Script=Latin}/gu) || []).length
+const cyrillic = (text) => (text.match(/\p{Script=Cyrillic}/gu) || []).length, latin = (text) => (text.match(/\p{Script=Latin}/gu) || []).length
 const sample = records.map((r) => (r.decision || '') + ' ' + (r.context || '')).join(' ')
-// Spanish and English share an alphabet; the small words every sentence needs tell them apart.
+// Small words tell Spanish from English, and from its neighbors: a language the sheet does not speak gets English.
 const hits = (words) => (sample.match(new RegExp('(?<![\\p{L}\\p{N}])(?:' + words + ')(?![\\p{L}\\p{N}])', 'giu')) || []).length
-const spanish = hits('de|del|la|las|el|los|que|en|por|para|con|una|un|se|su|sus|al|es|lo|más|pero|como|porque|sin|ya|muy|también|cuando|está|hay|nos|les')
+const spanish = hits('el|los|las|del|la|en|con|una|y|su|sus|al|es|lo|más|pero|porque|sin|ya|muy|también|cuando|está|hay')
+const neighbors = Math.max(hits('não|uma|um|com|em|os|do|da|dos|das|no|na|é|e|mais|então|você|isso|sem|há|ao|pelo|pela'), hits('le|les|des|et|est|une|pour|avec|pas|dans|qui|sur|nous|vous|du|au|ce|cette'), hits('il|di|che|per|non|gli|della|è|ma|anche|sono|questo|molto|perché|nel|alla'))
 const english = hits('the|of|and|to|in|is|that|for|it|with|as|was|on|are|be|by|this|not|or|we|our|at|from|but|have|has|they|you')
-const lang = Object.prototype.hasOwnProperty.call(STRINGS, opts.lang) ? opts.lang : cyrillic(sample) > latin(sample) ? 'ru' : spanish > english ? 'es' : 'en'
+const lang = Object.prototype.hasOwnProperty.call(STRINGS, opts.lang) ? opts.lang : cyrillic(sample) > latin(sample) ? 'ru' : spanish > english && spanish > neighbors ? 'es' : 'en'
 if (opts.lang && opts.lang !== lang) fail(['--lang must be ' + Object.keys(STRINGS).join(', ')])
 const S = STRINGS[lang]
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => String(values[key]))
