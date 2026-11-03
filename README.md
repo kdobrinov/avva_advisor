@@ -1,18 +1,4 @@
-# avva plugins
-
-Choose the package for your client. These are two workflows, Advisor for
-consulting a published Decision Model and Studio for building your own.
-
-| Client | Advisor | Studio |
-| --- | --- | --- |
-| OpenAI | [Advisor 1.1.1](openai/avva-advisor/) | [Studio 1.1.0](openai/avva-studio/) |
-| Claude Code | [Advisor](plugins/avva-advisor/) | [Studio](plugins/avva-studio/) |
-
-[OpenAI packaging and connection instructions](openai/README.md) explain the
-two ZIPs, authentication and installation boundaries. The packages are prepared
-for submission; their presence here does not mean OpenAI has approved them.
-
-## Claude Code packages
+# avva for your agent
 
 Two plugins for [avva](https://avva.chat). avva publishes how one professional decides
 (their past calls, what each one turned on, where they stop) as an MCP server
