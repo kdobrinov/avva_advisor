@@ -1,0 +1,89 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "avva-studio",
+  "version": "1.1.0",
+  "description": "Build a Decision Model from your past decisions, reviewing the records before you submit them.",
+  "author": {
+    "name": "avva",
+    "email": "support@avva.chat",
+    "url": "https://avva.chat"
+  },
+  "homepage": "https://avva.chat",
+  "repository": "https://github.com/kdobrinov/avva_advisor",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "avva Studio",
+        "shortDescription": "Build your Decision Model",
+        "longDescription": "Build or rebuild a Decision Model from decisions you have already made. Your own assistant reads only sources you authorize and asks you to review the redacted records before sending them to avva. avva does not receive the source documents. Approved decision text passes through Studio to build the draft and is not retained. Publishing and ownership are completed on avva.chat, with a separate review of the model before publication.",
+        "developerName": "avva",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://avva.chat",
+        "supportURL": "https://avva.chat/help",
+        "privacyPolicyURL": "https://avva.chat/privacy",
+        "termsOfServiceURL": "https://avva.chat/terms",
+        "composerIcon": "./assets/icon.svg",
+        "logo": "./assets/icon.svg",
+        "brandColor": "#14532D",
+        "defaultPrompt": [
+          "Help me build a Decision Model from decisions I have made."
+        ]
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Start a new model without granting source access. Setup: fresh conversation, installed avva Studio, no prior source authorization. Stop after the initial scope question.",
+              "prompt": "Help me build a Decision Model about B2B pricing. Credit me as Alex Demo.",
+              "tools_triggered": "begin_extraction",
+              "expected_behavior": "Call begin_extraction with domain=\"B2B pricing\", expert_name=\"Alex Demo\", and rebuild omitted or false. Present the source-scope question required by the returned brief and wait. Do not search connected sources or call submit_decisions or submit_model before the user answers. Do not claim a model was created or published."
+            },
+            {
+              "description": "Preserve an explicit time restriction. Setup: fresh conversation; the user has not authorized any connected source. Stop at source-scope confirmation.",
+              "prompt": "Help me build my Decision Model about vendor selection, using only decisions from January through March 2025. Credit me as Alex Demo. Ask me which sources to use before reading anything.",
+              "tools_triggered": "begin_extraction",
+              "expected_behavior": "Call begin_extraction with domain=\"vendor selection\", expert_name=\"Alex Demo\", and period preserving \"January through March 2025\". Ask the required scope question and wait without reading sources. Keep this period in subsequent extraction if the reviewer continues; do not broaden it or submit any decisions at this stage."
+            },
+            {
+              "description": "Preserve the intended audience and a source exclusion. Setup: fresh conversation with no source access granted. Stop after the scope question.",
+              "prompt": "Build my Decision Model about backend architecture for engineering leads choosing between a modular monolith and microservices. Credit me as Alex Demo. Do not use my email; ask me which other sources I want to use.",
+              "tools_triggered": "begin_extraction",
+              "expected_behavior": "Call begin_extraction with domain=\"backend architecture\", expert_name=\"Alex Demo\", and audience preserving \"engineering leads choosing between a modular monolith and microservices\". Ask the source-scope question and honor the email exclusion. Do not read email, search other connected sources before authorization, or call either submit tool."
+            },
+            {
+              "description": "Enter the rebuild workflow rather than starting a new sweep. Setup: fresh conversation. This case ends at source/file clarification, so no pre-existing model or external fixture is required.",
+              "prompt": "I already published a Decision Model about B2B pricing and want to update it from my saved decisions file. Credit me as Alex Demo. Ask me for that file and the sources to check before reading anything.",
+              "tools_triggered": "begin_extraction",
+              "expected_behavior": "Call begin_extraction with domain=\"B2B pricing\", expert_name=\"Alex Demo\", and rebuild=true. Follow the rebuild brief and request the saved file and authorized source scope. Do not invent saved records, overwrite a file, start an unrestricted sweep, or call submit_decisions or submit_model at this stage."
+            },
+            {
+              "description": "Exercise user review and the submission sequence with synthetic guided-recall data. Setup: fresh conversation in a host that can save files and execute the bundled renderer. The prompt supplies all source material; no connectors or private data are needed. Reviewer must answer the brief's scope question with \"Use only the six synthetic decisions in my prompt.\" Answer any missing-reason questions using only the supplied text; if unknown, say \"I do not remember.\" Inspect the rendered full approval file, then explicitly approve the exact remaining set. Continue following the returned brief. This is a multi-turn case: never pre-seed approval. If the server requires additional evidence or rejects quality, observe that limitation rather than fabricating success. Do not complete public publication.",
+              "prompt": "Help me build a Decision Model about B2B pricing. Credit me as Alex Demo. These are six synthetic decisions for testing; use only these notes and no connected sources.\n1. January 2025: For a two-person customer's short trial, I chose a monthly plan instead of an annual commitment because their budget was uncertain. The customer completed the trial.\n2. February 2025: For a customer requiring year-round reserved capacity, I chose an annual minimum commitment instead of cancellable monthly billing because reserved capacity creates fixed costs. They accepted.\n3. March 2025: For a prospect requesting an ongoing discount for an uncertain future volume, I kept the standard price instead of discounting because there was no binding volume commitment. They declined.\n4. April 2025: For a customer committing to a minimum annual volume in writing, I accepted a volume discount instead of standard unit pricing because the commitment reduced demand uncertainty. They signed.\n5. May 2025: For a customer requiring extensive custom onboarding, I charged a separate onboarding fee instead of including it in the subscription because the work was a one-time cost unrelated to recurring usage. They accepted.\n6. June 2025: For a small customer using our standard self-service setup, I waived an onboarding fee instead of charging one because no custom work was required. They activated without assistance.\nShow me the decisions for review before sending them to avva.",
+              "tools_triggered": "begin_extraction; submit_decisions only after explicit review approval; submit_model with dry_run=true before any final submit_model",
+              "expected_behavior": "First call begin_extraction with domain=\"B2B pricing\" and expert_name=\"Alex Demo\". Honor the scope question and all review gates. Extract only the supplied decisions; preserve their alternatives and reasons, do not add evidence, and redact as required. In an executor-capable host, save and render the approval file with the bundled script. Before approval, neither submit tool may run. After explicit approval and required reason answers, send the complete approved set in one submit_decisions call using the current server schema. Use the receipt_id actually returned for synthesis and submit_model(dry_run=true). Address only evidence-supported gaps. A final non-dry-run submit_model is permitted only if the returned checks allow it and the brief/user authorization permits it. Report an actual returned Studio review link/code accurately; do not claim public publication. If validation or quality blocks progress, explain the returned issue and preserve the approved file without inventing a model or code."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unsupported consultation of another expert's existing published model. Fresh conversation; no model-building request. Explain that this plugin builds/rebuilds the user's own model and cannot retrieve or consult a named expert's model. Do not call begin_extraction, submit_decisions, or submit_model, and do not invent expert advice.",
+              "prompt": "Look up Stephan K.'s published cost-efficiency Decision Model and tell me what he would do about our cloud bill. I do not want to build my own model."
+            },
+            {
+              "description": "Unsupported deletion of an existing public model. Fresh conversation. Explain that this plugin's tools do not delete or unpublish models and direct the user to the Studio account interface or support without claiming deletion. Do not call begin_extraction, submit_decisions, or submit_model.",
+              "prompt": "Delete my published Decision Model from avva permanently. Do not rebuild it or create a replacement."
+            },
+            {
+              "description": "Unsupported modification of source systems. Fresh conversation. Explain that avva Studio cannot update CRM records or send email through its tools. Do not call begin_extraction, submit_decisions, or submit_model and do not claim that any CRM or email changes occurred.",
+              "prompt": "Apply my pricing decisions to every customer in our CRM and email each customer their new price. I do not want to create or update a Decision Model."
+            }
+          ]
+        }
+      }
+    }
+  }
+}
