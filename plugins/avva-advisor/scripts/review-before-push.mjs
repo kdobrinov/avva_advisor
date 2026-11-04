@@ -17,7 +17,6 @@ const LIMIT = 8000
 const CONTEXT_LIMIT = 4000
 const MAX_BUFFER = 64 * 1024 * 1024
 const TOO_BIG = Symbol('too big')
-const BT = String.fromCharCode(96)
 const MARKERS = ['AVVA_APPLIED', 'AVVA_REVIEWED']
 const fmt = (n) => n.toLocaleString('en-US')
 
@@ -49,6 +48,7 @@ const line = (out) => (typeof out === 'string' ? out.trim().split('\n')[0] : '')
 // 1. The command, read the way a shell reads it: quotes, $(...), here-documents
 // (the commit message an agent writes), redirections, && ; || | and ( ).
 // ---------------------------------------------------------------------------
+const BT = String.fromCharCode(96)
 function readDelimiter(src, j) {
   let strip = false
   if (src[j] === '-') {
@@ -232,6 +232,7 @@ function tokenize(src) {
   flush()
   return out
 }
+
 
 // ---------------------------------------------------------------------------
 // 2. What each step does to what a later push sends.
@@ -553,13 +554,12 @@ const live = pushes.filter((p) => !p.dry)
 if (!live.length && !unreadable) process.exit(0)
 
 // ---------------------------------------------------------------------------
-// 3. The connected expert: an avva-* HTTP server that is not avva-studio (the
-// extractor). Looked up in Claude Code's own precedence (local scope, then
-// the project's .mcp.json, then user scope) and in every directory that can
-// name this project: the cwd, CLAUDE_PROJECT_DIR and the repository root. A
-// push from a subdirectory looked only under projects[cwd], found nothing and
-// went out unreviewed; a user-scope expert was taken before the project's own.
+// 3a. Which connected entry is one Decision Model's own connection.
 // ---------------------------------------------------------------------------
+const AVVA_ORIGIN = 'https://avva.chat'
+const SLUG = /^[a-z0-9][a-z0-9-]{1,48}$/
+const RESERVED = new Set(["advisor","api","catalog","dashboard","expert","experts","mcp","no-experts","no-match","privacy","studio","studio-session","terms"])
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
 const read = (file, pick) => {
   try {
     return pick(JSON.parse(readFileSync(file, 'utf8'))) || {}
@@ -567,6 +567,74 @@ const read = (file, pick) => {
     return {}
   }
 }
+const braced = (v) => '$' + '{' + v + '}'
+function expand(text, missing) {
+  return String(text).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}/g, (whole, v, fallback) => {
+    if (typeof process.env[v] === 'string') return process.env[v]
+    if (fallback !== undefined) return fallback
+    missing.add(v)
+    return whole
+  })
+}
+// An expert to consult ({ url, headers }), a sentence saying why this entry cannot be one ({ why }), or nothing to say.
+function classify(name, s) {
+  const missing = new Set()
+  const url = expand(s.url, missing)
+  const headers = {}
+  for (const [k, v] of Object.entries(s.headers && typeof s.headers === 'object' ? s.headers : {})) headers[k] = expand(v, missing)
+  let u = null
+  try {
+    u = new URL(url)
+  } catch {}
+  const avva = u && (u.origin === AVVA_ORIGIN || LOOPBACK.has(u.hostname))
+  const parts = u ? u.pathname.replace(/\/+$/, '').split('/').slice(1) : []
+  if (avva && parts.length === 1 && parts[0] === 'mcp-studio') return {}
+  if (missing.size) {
+    const vars = [...missing]
+    return {
+      why: name + "'s connection uses " + vars.map(braced).join(', ') + ', and ' + (vars.length > 1 ? 'they are' : 'it is') +
+        ' not set where this hook runs, so nothing was sent to it. Set ' + vars.join(', ') + ' in the shell you start Claude Code from.',
+    }
+  }
+  const pages = u ? u.origin + '/experts' : AVVA_ORIGIN + '/experts'
+  const howTo = " To have this project's pushes reviewed, connect one Decision Model to it: copy the claude mcp add line from that model's page at " + pages + ' and run it in this project.'
+  if (avva && parts.length === 1 && parts[0] === 'mcp-advisor') {
+    return { why: name + " is avva's Advisor connection, which asks which Decision Model to consult on every call, so it cannot review a push by itself." + howTo }
+  }
+  if (avva && parts.length === 1 && parts[0] === 'mcp-catalog') {
+    return { why: name + " is avva's catalog, which finds Decision Models and consults none, so it cannot review a push." + howTo }
+  }
+  const slug = parts[0] === 'mcp' && (parts.length === 2 || parts.length === 3) ? parts[1].toLowerCase() : ''
+  if (!SLUG.test(slug) || RESERVED.has(slug)) {
+    return { why: name + "'s address is not a Decision Model's connection (" + AVVA_ORIGIN + '/mcp/<slug>), so it cannot review a push.' }
+  }
+  if (!avva) return { why: name + ' points at ' + u.origin + ', which is not avva (' + AVVA_ORIGIN + '), so the diff was not sent there.' }
+  return { url, headers }
+}
+// The first entry by a name decides, in the scopes' order, as Claude Code's own precedence does.
+function connectedExperts(scopes) {
+  const experts = []
+  const passed = []
+  const named = new Set()
+  for (const [scope, entries] of scopes) {
+    for (const [name, s] of Object.entries(entries)) {
+      if (!name.startsWith('avva-') || name === 'avva-studio' || !s || typeof s.url !== 'string' || named.has(name)) continue
+      named.add(name)
+      const found = classify(name, s)
+      if (found.url) experts.push({ name, server: s, target: found, scope })
+      else if (found.why) passed.push(found.why)
+    }
+  }
+  return { experts, passed }
+}
+
+
+// ---------------------------------------------------------------------------
+// 3. The connected expert: an avva-* entry that is one Decision Model's own
+// connection (3a). Looked up in Claude Code's own precedence (local scope, then
+// the project's .mcp.json, then user scope) and in every directory that can
+// name this project: the cwd, CLAUDE_PROJECT_DIR and the repository root.
+// ---------------------------------------------------------------------------
 const top = line(gitIn({ cwd: startDir, args: [], env: {} }, ['rev-parse', '--show-toplevel']))
 const dirs = [...new Set([startDir, process.env.CLAUDE_PROJECT_DIR, top].filter(Boolean))]
 const claudeJson = join(homedir(), '.claude.json')
@@ -575,15 +643,11 @@ const scopes = [
   ...dirs.map((dir) => ['this project (.mcp.json)', read(join(dir, '.mcp.json'), (j) => j.mcpServers)]),
   ['every project (user scope)', read(claudeJson, (j) => j.mcpServers)],
 ]
-const experts = []
-for (const [scope, entries] of scopes) {
-  for (const [name, s] of Object.entries(entries)) {
-    if (!name.startsWith('avva-') || name === 'avva-studio' || !s || typeof s.url !== 'string') continue
-    if (!experts.some((e) => e.name === name)) experts.push({ name, server: s, scope })
-  }
+const { experts, passed } = connectedExperts(scopes)
+if (!experts.length) {
+  allow(passed.length ? 'this push was not reviewed. ' + passed.join(' ') : 'no avva expert MCP is connected in this project, so this push was not reviewed')
 }
-if (!experts.length) allow('no avva expert MCP is connected in this project, so this push was not reviewed')
-const { name, server, scope } = experts[0]
+const { name, server, target, scope } = experts[0]
 // A user-wide expert alone does not hold the push. One expert connected for
 // every project reviews every repository on the machine with one person's
 // judgment — a product manager's model on a code diff, on every push — and
@@ -646,6 +710,7 @@ function targetsOf(push, remote) {
   const items = []
   const unknown = []
   const deletes = []
+  const refused = []
   const add = (label, found, dst) => {
     if (!found || !found.tip) unknown.push(label + ' (it does not resolve to a commit)')
     else items.push({ label: label + ' -> ' + remote + '/' + short(dst || found.dst || label), tip: found.tip })
@@ -683,12 +748,24 @@ function targetsOf(push, remote) {
     } else if (mode !== 'nothing') {
       if (!branch) unknown.push('HEAD (detached, and the push names no branch)')
       else {
-        const merge = conf('branch.' + branch + '.remote') === remote ? conf('branch.' + branch + '.merge') : null
-        add(branch, resolveSrc(push, branch), merge || 'refs/heads/' + branch)
+        // Where git itself refuses a push that names no branch it sends nothing, and a review of it is spent for nothing.
+        const own = conf('branch.' + branch + '.remote')
+        const merge = own ? conf('branch.' + branch + '.merge') : null
+        const same = remote === (own || 'origin')
+        const auto = /^(true|yes|on|1)$/i.test(conf('push.autoSetupRemote') || '')
+        const upstream = mode === 'upstream' || mode === 'tracking'
+        const checked = upstream || (mode !== 'current' && same)
+        const why =
+          upstream && !same ? remote + ' is not the remote ' + branch + ' tracks'
+          : checked && !merge && !auto ? branch + ' has no upstream branch'
+          : checked && !upstream && merge && merge !== 'refs/heads/' + branch ? branch + ' tracks a branch of another name'
+          : ''
+        if (why) refused.push('git refuses this push before it sends anything (' + why + '), so no review was fetched. Name what to push, as in "git push -u ' + remote + ' ' + branch + '", and the hook reviews that push.')
+        else add(branch, resolveSrc(push, branch), upstream && merge ? merge : 'refs/heads/' + branch)
       }
     }
   }
-  return { items, unknown, deletes }
+  return { items, unknown, deletes, refused }
 }
 function withUntracked(ctx, run) {
   const topDir = line(gitIn(ctx, ['rev-parse', '--show-toplevel']))
@@ -734,6 +811,7 @@ const reviewed = []
 const nothing = []
 const unknown = []
 const deletes = []
+const refused = []
 const skipped = new Set()
 const seen = new Set()
 for (const push of live) {
@@ -749,6 +827,7 @@ for (const push of live) {
   const t = targetsOf(push, r.remote)
   unknown.push(...t.unknown)
   deletes.push(...t.deletes.map((d) => r.remote + '/' + d))
+  refused.push(...t.refused)
   for (const n of push.notRun) skipped.add(n)
   for (const item of t.items) {
     const key = r.remote + ' ' + item.tip.sha + ' ' + item.tip.pending
@@ -767,6 +846,7 @@ if (!reviewed.length) {
     notReviewed && 'this push was not reviewed. ' + notReviewed,
     nothing.length && 'nothing outgoing to review for ' + nothing.join(', ') + ': the remote already has it.',
     deletes.length && 'this push deletes ' + deletes.join(', ') + ', and a deletion has nothing to review.',
+    ...refused,
   ].filter(Boolean)
   allow((parts.join(' ') || 'nothing outgoing to review.') + notSimulated)
 }
@@ -847,14 +927,14 @@ let packet = null
 // each has a different fix the user can make only if told which.
 let refusal = ''
 try {
-  const res = await fetch(server.url, {
+  const res = await fetch(target.url, {
     method: 'POST',
     signal: AbortSignal.timeout(20000),
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': ci ? 'advisor-hook-ci/0.6.5' : 'advisor-hook/0.6.5',
-      ...(server.headers || {}),
+      'x-avva-client': ci ? 'advisor-hook-ci/0.6.6' : 'advisor-hook/0.6.6',
+      ...target.headers,
     },
     body: JSON.stringify(body),
   })
@@ -887,6 +967,7 @@ deny([
   ...(partly ? ['Sent only in part: ' + partly + '. Apply the same review to the rest of it yourself before pushing.'] : []),
   ...(unsent.length ? ['Not sent: ' + shown + '. Apply the same review to these files yourself before pushing.'] : []),
   ...(notReviewed ? [notReviewed] : []),
+  ...refused,
   'If your verdict is reject, revise before pushing. Otherwise push the same diff again with the marker in front:',
   '  ' + opener + command,
   '',
