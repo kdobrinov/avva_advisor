@@ -2,8 +2,8 @@
 // Rendered by avvamcp scripts/render-advisor-repo.mjs from shared/studio-plugin.ts. Do not edit by hand.
 // Renders the approval sheet from the decisions json: what you read here is what would be sent.
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 
 const FIELDS = {"title":{"max":200},"date":{"max":40},"sourceType":{"values":["chat-history","code-and-reviews","issues-and-roadmaps","documents","customer-systems","guided-recall","other"]},"origin":{"max":80},"context":{"max":4000},"decision":{"required":true,"max":8000},"driver":{"max":2000},"otherSide":{"max":2000},"condition":{"max":1000},"outcome":{"max":2000},"revisited":{"max":2000},"kind":{"values":["reject","choose","require","accept"]},"id":{"max":40}}
 const FLAGS = [{"kind":"email address","source":"(?<![A-Z0-9._%+-])[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]+\\.[A-Z]{2,}\\b","flags":"i"},{"kind":"private or identifying URL","source":"\\bhttps?:\\/\\/\\S+","flags":"i"},{"kind":"credential or secret","source":"\\b(?:api[_ -]?key|secret|password)\\b\\s*[:=]|(?<![\\p{L}\\p{N}_])(?:секретн\\p{L}*\\s+ключ\\p{L}*|ключ\\s+доступа|парол\\p{L}*)\\s*[:=]|\\btoken\\b\\s*[:=]\\s*[\"'\\u0060]?[A-Za-z0-9_\\-./+]{12,}|(?<![\\p{L}\\p{N}_])токен\\p{L}*\\s*[:=]\\s*[\"'\\u0060]?[A-Za-z0-9_\\-./+]{12,}|\\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\\bavk_[A-Za-z0-9_-]{16,}","flags":"iu"},{"kind":"ticket or repository identifier","source":"\\b(?:JIRA|ticket|issue|PR|repo(?:sitory)?)\\b\\s*(?:#|:)\\s*[A-Z0-9_-]{2,}\\b","flags":"i"},{"kind":"NDA or confidential marker","source":"\\b(?:strictly private|internal only|internal use only)\\b|\\bCONFIDENTIAL\\b|(?<![\\p{L}\\p{N}_])КОНФИДЕНЦИАЛЬНО(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])СЕКРЕТНО(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:CONFIDENCIAL|RESERVADO|SECRETO|DIFUSIÓN LIMITADA)(?![\\p{L}\\p{N}_])|\\b(?:[Tt]his|[Tt]hat|[Oo]ur|[Tt]he client['’]?s|[Tt]he customer['’]?s)\\s+(?:\\w+\\s+){0,2}(?:NDA|confidentiality agreement)\\b|\\bunder (?:an )?NDA with\\b","flags":"u"},{"kind":"phone number","source":"(?!\\d{1,3}(?:[ \\u00A0\\u202F.]\\d{3}){2,12}(?![\\s().-]*\\d))(?<!\\d)(?!(?:\\d{1,2}[./]\\d{1,2}[./](?:\\d{4}|\\d{2})|\\d{4}[-./]\\d{1,2}[-./]\\d{1,2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./])\\d{1,2}[./](?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./]\\d{1,2}[./])(?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./])\\d{1,2}[-./]\\d{1,2}(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./]\\d{1,2}[-./])\\d{1,2}(?![./]?\\d))(?:\\+\\d{1,3}[\\s().-]*)?(?:\\d[\\s().-]*){9,}","flags":""},{"kind":"passport or national-id number","source":"(?<![\\p{L}\\p{N}_])\\d{3}-\\d{2}-\\d{4}(?![\\p{L}\\p{N}_]|-\\d)|(?<![\\p{L}\\p{N}_])(?!(?:19|20)\\d\\d(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01]))\\d{8}[TRWAGMYFPDXBNJZSQVHLCKE](?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])[XYZ]-?\\d{7}-?[TRWAGMYFPDXBNJZSQVHLCKE](?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])[A-Z]{4}\\d{6}[HMX][A-Z]{5}[A-Z0-9]\\d(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:id(?=\\s{0,3}(?:n\\.?\\s?[º°o]\\.?|number))|passport(?:\\s+card)?|pasaporte|national\\s+id(?:entity)?(?:\\s+card)?|id(?:entity)?\\s+card|identity\\s+(?:document|number)|documento\\s+(?:nacional\\s+)?de\\s+identidad|c[ée]dula(?:\\s+de\\s+(?:identidad|ciudadan[íi]a))?|dni|nie|ssn|social\\s+security\\s+number)\\s{0,3}(?:(?:n\\.?\\s?[º°o]\\.?|n[uú]m(?:ero|\\.)?|number|#|№)\\s{0,3})?(?::\\s{0,3})?(?:[A-Z]{1,3}-?\\d{6,10}[A-Z]?|\\d{7,10}[A-Z]?|\\d{1,2}\\.\\d{3}\\.\\d{3}-?[TRWAGMYFPDXBNJZSQVHLCKE])(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:загран)?паспорт\\p{L}*(?:\\s(?:данн\\p{L}*|РФ|гражданина\\sРФ))?\\s{0,3}(?::\\s{0,3})?(?:(?:сери[ияй]|(?:№|N|номер|ном\\.))\\s{0,3})?(?:\\d{2}\\s?\\d{2},?\\s{0,3}(?:(?:№|N|номер|ном\\.)\\s{0,3})?\\d{6}|\\d{2}\\s{0,3}(?:(?:№|N|номер|ном\\.)\\s{0,3})?\\d{7})(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"secret or confidential (RU)","source":"(?<![\\p{L}\\p{N}_])(?:эт(?:от|а|у|ой|ом)|наш\\p{L}*|клиентск\\p{L}*)\\s+(?:\\p{L}+\\s+){0,2}(?:НДА|соглашени\\p{L}*\\s+о\\s+неразглашении)(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:строго\\s+конфиденциальн\\p{L}*|только\\s+для\\s+внутреннего\\s+использования)(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"secret or confidential (ES)","source":"(?<![\\p{L}\\p{N}_])(?:estrictamente\\s+confidencial\\p{L}*|s[oó]lo\\s+para\\s+uso\\s+interno|de\\s+uso\\s+interno\\s+exclusivo|prohibida\\s+su\\s+(?:difusión|distribución)|no\\s+distribuir)(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?:este|ese|aquel|nuestro)\\s+(?:\\p{L}+\\s+){0,2}(?:NDA|acuerdo\\s+de\\s+confidencialidad)(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])bajo\\s+(?:un\\s+)?(?:NDA|acuerdo\\s+de\\s+confidencialidad)\\s+con(?![\\p{L}\\p{N}_])","flags":"iu"},{"kind":"sensitive structure (card number, contact or credential shape)","source":"(\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}|(?<![\\w.+-])[\\w.+-]{1,64}@[\\w-]+\\.[\\w.]{2,}|(?!\\d{1,3}(?:[ \\u00A0\\u202F.]\\d{3}){2,12}(?![\\s().-]*\\d))(?<!\\d)(?!(?:\\d{1,2}[./]\\d{1,2}[./](?:\\d{4}|\\d{2})|\\d{4}[-./]\\d{1,2}[-./]\\d{1,2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./])\\d{1,2}[./](?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{1,2}[./]\\d{1,2}[./])(?:\\d{4}|\\d{2})(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./])\\d{1,2}[-./]\\d{1,2}(?![./]?\\d)|(?<=(?<!\\d)\\d{4}[-./]\\d{1,2}[-./])\\d{1,2}(?![./]?\\d))\\+?\\d[\\d\\s()-]{9,}\\d|password\\s*[:=]|api[_-]?key\\s*[:=])","flags":"i"},{"kind":"names avva: keep it if it is a decision about your own product, cross it out if it is about building this model","source":"(?<![\\p{L}\\p{N}_])avva(?![\\p{L}\\p{N}_])|\\b(?:mcp[- ]studio|begin_extraction|submit_decisions|submit_model)\\b|\\bdecision[- ]model platform\\b|платформ\\p{L}*\\s+(?:для\\s+)?модел\\p{L}*\\s+решений","flags":"iu"}].map((f) => ({ kind: f.kind, re: new RegExp(f.source, f.flags) }))
@@ -411,24 +411,45 @@ try {
 } catch (error) {
   fail(['cannot read ' + jsonPath + ': ' + (error && error.message)])
 }
-// The json is the user's RAW approved set and its only copy. For a Claude Code
-// user the working directory is usually a git working tree, one git add -A
-// from a remote, so say so before anything else. Warnings go to stderr; a
-// machine without git, or a file outside any repository, prints nothing.
-const git = (argv) => {
+// The json is the user's RAW approved set and its only copy, and the sheet
+// written beside it prints every record in full. For a Claude Code user the
+// working directory is usually a git working tree, one git add -A from a
+// remote, so every file of the set is checked before anything else: the
+// json, the sheet this run writes, the approved file --before names, and any
+// other avva-decisions file beside them (an earlier set renamed
+// .previous.json, a working copy). check-ignore reads the path, not the
+// file, so the sheet is checked before it is written. One exclude line
+// covers them all. Warnings go to stderr; a machine without git, or a file
+// outside any repository, prints nothing.
+const SET_PATTERN = 'avva-decisions*'
+const mdPath = join(dirname(jsonPath), basename(jsonPath).replace(/\.json$/i, '') + '.md')
+const git = (cwd, argv) => {
   try {
-    execFileSync('git', argv, { cwd: dirname(jsonPath), stdio: 'ignore' })
+    execFileSync('git', argv, { cwd, stdio: 'ignore' })
     return true
   } catch {
     return false
   }
 }
-if (git(['rev-parse', '--is-inside-work-tree'])) {
-  const file = basename(jsonPath)
-  if (git(['ls-files', '--error-unmatch', '--', file])) {
-    console.error('WARNING: ' + file + ' is TRACKED by git. It is the user\'s raw approved set and must never be committed or pushed: run git rm --cached -- ' + file + ', add it to .git/info/exclude, and tell the user. Or move it to ~/avva/.')
-  } else if (!git(['check-ignore', '-q', '--', file])) {
-    console.error('WARNING: ' + file + ' is inside a git working tree and not ignored, so one git add -A commits the user\'s raw approved set. Add it to .git/info/exclude (or move it to ~/avva/) and tell the user.')
+if (!/^avva-decisions/i.test(basename(jsonPath))) {
+  console.error('WARNING: ' + basename(jsonPath) + ' is not named the way the brief names the decisions file (avva-decisions-<domain>.json), so the ' + SET_PATTERN + ' line in .git/info/exclude does not cover it or the sheet written beside it (' + basename(mdPath) + '), and a rebuild does not find it by name. Save the set under the exact name the brief gives and run this again.')
+}
+const setPaths = [jsonPath, mdPath, ...(opts.before ? [opts.before] : [])]
+for (const dir of new Set(setPaths.map((path) => dirname(path)))) {
+  let names = []
+  try {
+    names = readdirSync(dir)
+  } catch {}
+  for (const name of names) if (/^avva-decisions.*\.(?:json|md)$/i.test(name)) setPaths.push(join(dir, name))
+}
+for (const path of new Map(setPaths.map((path) => [resolve(path), path])).values()) {
+  const dir = dirname(path)
+  const file = basename(path)
+  if (!git(dir, ['rev-parse', '--is-inside-work-tree'])) continue
+  if (git(dir, ['ls-files', '--error-unmatch', '--', file])) {
+    console.error('WARNING: ' + file + ' is TRACKED by git. It holds the user\'s approved records in full and must never be committed or pushed: run git rm --cached -- ' + file + ', add the line ' + SET_PATTERN + ' to .git/info/exclude, and tell the user. Or move the set to ~/avva/.')
+  } else if (!git(dir, ['check-ignore', '-q', '--', file])) {
+    console.error('WARNING: ' + file + ' is inside a git working tree and not ignored, so one git add -A commits the user\'s approved records. Add the line ' + SET_PATTERN + ' to .git/info/exclude, which covers the json, the sheet beside it and every copy of the set (or move them to ~/avva/), and tell the user.')
   }
 }
 
@@ -912,7 +933,6 @@ const rangeLine = opts.range
     : fill(S.rangeUnread, { range: opts.range })
   : ''
 
-const mdPath = join(dirname(jsonPath), basename(jsonPath).replace(/\.json$/i, '') + '.md')
 const headerBlock = [
   '# ' + S.title + ' — ' + basename(jsonPath),
   '',
@@ -1057,7 +1077,7 @@ const askItems = (list) => {
     const situation = wordsOf(r.context)
     const skips = run.length > 0 && situation.length > run.length && run.every((word, i) => situation[i] === word)
     const cue = skips ? '…' + words(situation.slice(run.length).join(' '), ASK_CONTEXT_WORDS) : words(r.context, ASK_CONTEXT_WORDS)
-    return '- #' + (index + 1) + (date ? ' · ' + date : '') + ' · ' + cue + ' → ' + words(r.decision, ASK_WORDS) + ' — ' + missing.join(', ')
+    return '- #' + (index + 1) + (date ? ' · ' + date : '') + (cue ? ' · ' + cue : '') + ' → ' + words(r.decision, ASK_WORDS) + ' — ' + missing.join(', ')
   })
 }
 // How far the reasons are from the next label, counted on what goes, and said

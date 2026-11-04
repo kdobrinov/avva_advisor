@@ -34,7 +34,14 @@ push: your agent applies that review, puts its verdict first, and pushes the
 same diff again with the marker the hook prints. The hook judges nothing —
 the verdict is your agent's. It lets the push through, with a note, when no
 expert is connected in the project, when the server does not answer or
-refuses, or when it cannot tell what a ref sends, and then it names that ref.
+refuses, when git itself will refuse the push (a branch with no upstream),
+or when it cannot tell what a ref sends, and then it names that ref.
+
+The expert is one model's own connection, `https://avva.chat/mcp/<slug>`,
+the line its page prints. The Advisor and catalog connections choose no model,
+so they review nothing on push, and the hook sends nothing to an address off
+avva. `${VAR}` in the connection's URL and headers is read from your
+environment, as Claude Code reads it; an unset one is never sent.
 
 What leaves your machine: up to 8,000 characters of the diff plus the list of
 changed files, sent to the expert's `review` and not stored. The diff is

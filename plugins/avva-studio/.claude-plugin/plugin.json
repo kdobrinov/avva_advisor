@@ -1,11 +1,12 @@
 {
   "name": "avva-studio",
-  "description": "Build your avva Decision Model from the work your assistant already reaches: avva Studio as an MCP server, /avva-build-model, and a script that prints every record for you to approve.",
-  "version": "0.4.24",
+  "description": "Build your avva Decision Model from the conversations, files or work items you select: avva Studio as an MCP server, /avva-build-model, and a script that prints every record for you to approve.",
+  "version": "0.4.25",
   "author": {
     "name": "avva",
     "url": "https://avva.chat"
   },
+  "privacyPolicyUrl": "https://avva.chat/privacy",
   "mcpServers": {
     "avva-studio": {
       "type": "http",
