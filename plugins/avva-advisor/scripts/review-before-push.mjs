@@ -557,6 +557,7 @@ if (!live.length && !unreadable) process.exit(0)
 // 3a. Which connected entry is one Decision Model's own connection.
 // ---------------------------------------------------------------------------
 const AVVA_ORIGIN = 'https://avva.chat'
+const AVVA_AGENT_ORIGIN = 'https://mcp.avva.chat'
 const SLUG = /^[a-z0-9][a-z0-9-]{1,48}$/
 const RESERVED = new Set(["advisor","api","catalog","dashboard","expert","experts","mcp","no-experts","no-match","privacy","studio","studio-session","terms"])
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
@@ -586,7 +587,7 @@ function classify(name, s) {
   try {
     u = new URL(url)
   } catch {}
-  const avva = u && (u.origin === AVVA_ORIGIN || LOOPBACK.has(u.hostname))
+  const avva = u && (u.origin === AVVA_ORIGIN || u.origin === AVVA_AGENT_ORIGIN || LOOPBACK.has(u.hostname))
   const parts = u ? u.pathname.replace(/\/+$/, '').split('/').slice(1) : []
   if (avva && parts.length === 1 && parts[0] === 'mcp-studio') return {}
   if (missing.size) {
@@ -596,7 +597,7 @@ function classify(name, s) {
         ' not set where this hook runs, so nothing was sent to it. Set ' + vars.join(', ') + ' in the shell you start Claude Code from.',
     }
   }
-  const pages = u ? u.origin + '/experts' : AVVA_ORIGIN + '/experts'
+  const pages = u && u.origin !== AVVA_AGENT_ORIGIN ? u.origin + '/experts' : AVVA_ORIGIN + '/experts'
   const howTo = " To have this project's pushes reviewed, connect one Decision Model to it: copy the claude mcp add line from that model's page at " + pages + ' and run it in this project.'
   if (avva && parts.length === 1 && parts[0] === 'mcp-advisor') {
     return { why: name + " is avva's Advisor connection, which asks which Decision Model to consult on every call, so it cannot review a push by itself." + howTo }
@@ -606,7 +607,7 @@ function classify(name, s) {
   }
   const slug = parts[0] === 'mcp' && (parts.length === 2 || parts.length === 3) ? parts[1].toLowerCase() : ''
   if (!SLUG.test(slug) || RESERVED.has(slug)) {
-    return { why: name + "'s address is not a Decision Model's connection (" + AVVA_ORIGIN + '/mcp/<slug>), so it cannot review a push.' }
+    return { why: name + "'s address is not a Decision Model's connection (" + AVVA_AGENT_ORIGIN + '/mcp/<slug>), so it cannot review a push.' }
   }
   if (!avva) return { why: name + ' points at ' + u.origin + ', which is not avva (' + AVVA_ORIGIN + '), so the diff was not sent there.' }
   return { url, headers }
@@ -933,7 +934,7 @@ try {
     headers: {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
-      'x-avva-client': ci ? 'advisor-hook-ci/0.6.6' : 'advisor-hook/0.6.6',
+      'x-avva-client': ci ? 'advisor-hook-ci/0.6.7' : 'advisor-hook/0.6.7',
       ...target.headers,
     },
     body: JSON.stringify(body),

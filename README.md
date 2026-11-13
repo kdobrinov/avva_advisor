@@ -37,7 +37,7 @@ expert is connected in the project, when the server does not answer or
 refuses, when git itself will refuse the push (a branch with no upstream),
 or when it cannot tell what a ref sends, and then it names that ref.
 
-The expert is one model's own connection, `https://avva.chat/mcp/<slug>`,
+The expert is one model's own connection, `https://mcp.avva.chat/mcp/<slug>`,
 the line its page prints. The Advisor and catalog connections choose no model,
 so they review nothing on push, and the hook sends nothing to an address off
 avva. `${VAR}` in the connection's URL and headers is read from your

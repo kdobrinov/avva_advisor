@@ -10,13 +10,13 @@
       "name": "avva-advisor",
       "source": "./plugins/avva-advisor",
       "description": "Standing-advisor cadence for connected avva experts: your agent consults the expert before locking, shipping, or choosing — without being asked.",
-      "version": "0.6.6"
+      "version": "0.6.7"
     },
     {
       "name": "avva-studio",
       "source": "./plugins/avva-studio",
       "description": "Build your avva Decision Model from the conversations, files or work items you select: avva Studio as an MCP server, /avva-build-model, and a script that prints every record for you to approve.",
-      "version": "0.4.25"
+      "version": "0.4.26"
     }
   ]
 }
