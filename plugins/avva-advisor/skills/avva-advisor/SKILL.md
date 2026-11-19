@@ -1,13 +1,13 @@
 ---
 name: avva-advisor
-description: Consult a connected avva expert MCP (server name starting with "avva-") continuously while working in its domain — expert_questions before locking an approach, red_flag_check on drafts, review before finalizing anything significant. Do not wait to be asked.
+description: Consult a connected avva Decision Model while working in its domain — expert_questions before locking an approach, red_flag_check on drafts, review before finalizing anything significant. Do not wait to be asked.
 ---
 
 # avva standing advisor
 
 A connected avva expert is a standing reviewer, not a freelancer and not a chatbot. At call time no person is in the loop: each tool returns a verification packet; you apply it on your tokens, in this thread.
 
-Do not wait for the user to say "Use avva" or name the expert. If an avva MCP server is connected (name starts with `avva-`, not `avva-studio`), consult it on this cadence unprompted. Once, when you start work in the expert's domain, call `about_expert` before anything else: it returns how the expert works, where their model records it, and what a packet costs. Then:
+Use an avva connection that offers `review`. If only the catalog is connected, use `search` and `fetch`, ask the user to choose a model and help them connect its URL before reviewing. If `review` requires `model_slug`, ask which model to use and pass its slug on each consultation. Do not wait for the user to say "Use avva" again once the model is selected. Once, when you start work in the expert's domain, call `about_expert` before anything else: it returns how the expert works, where their model records it, and what a packet costs. Then:
 
 1. START of a task — `expert_questions` before locking an approach.
 2. WHILE working — `red_flag_check` on drafts, plans, and diffs (cheap gate).
