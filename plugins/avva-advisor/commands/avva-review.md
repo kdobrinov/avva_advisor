@@ -2,7 +2,7 @@
 description: Ask the connected avva expert to review what you are about to do.
 ---
 
-Consult the connected avva expert MCP (a server whose name starts with `avva-`, never `avva-studio`) about the work in front of you.
+Use an avva connection that offers `review`. If only the catalog is connected, use `search` and `fetch`, ask the user to choose a model and help them connect its URL before reviewing. If `review` requires `model_slug`, ask which model to use and pass its slug on each consultation.
 
 1. If the user named something to review, that is the proposal. Otherwise use what you are about to ship, recommend, or finalize in this conversation — say which it is in one line before you call, so they can redirect you.
 2. Call `review` with the situation as context and that proposal. For an A/B choice call `compare_options` instead; if you have not settled an approach yet, call `expert_questions` first.
