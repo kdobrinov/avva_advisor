@@ -2,8 +2,14 @@
 
 Two plugins for [avva](https://avva.chat). avva publishes how one professional decides
 (their past calls, what each one turned on, where they stop) as an MCP server
-your agent consults before it answers. avva Advisor and avva Studio are not
-listed in the official agent stores yet.
+your agent consults before it answers.
+
+## In ChatGPT
+
+- [Open avva Advisor](https://chatgpt.com/plugins/plugin_asdk_app_6afccab408388191be1d6cc5c71eabae?search=avva) to find a public Decision Model. Describe your decision, choose a model, then ask what its closest cases suggest.
+- [Open avva Studio](https://chatgpt.com/plugins/plugin_asdk_app_6ae9d44fdc2881918104b802780b6f78?search=avva) to build a model from your own decisions. Choose the material it may use and review the decisions before sending them to avva.
+
+## In Claude Code
 
 - **avva-advisor**, for people who use a connected model. It makes your agent
   consult it without being asked: `expert_questions` before locking an
@@ -12,7 +18,7 @@ listed in the official agent stores yet.
 - **avva-studio**, for professionals building one from decisions they already
   made.
 
-The advisor does not connect a model by itself. Pick one on
+The Claude Code Advisor plugin works with a model you connect to your project. Pick one on
 [avva.chat](https://avva.chat), copy the connection from its page, then
 install this so the connection gets used instead of forgotten. Some models
 on the shelf are reference models: composites avva wrote, labelled as such on
@@ -81,7 +87,7 @@ tooling, not a second set of them.
 
 ## Other clients
 
-For ChatGPT or the Claude app, open the model’s page on [avva](https://avva.chat),
+For manual setup in ChatGPT, the Claude app or another MCP client, open the model’s page on [avva](https://avva.chat),
 choose your app, and follow its steps to add the MCP address manually. To build
 a model, use the connection instructions in [Studio](https://avva.chat/studio).
 
