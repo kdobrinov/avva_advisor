@@ -2,7 +2,8 @@
 
 Two plugins for [avva](https://avva.chat). avva publishes how one professional decides
 (their past calls, what each one turned on, where they stop) as an MCP server
-your agent consults before it answers.
+your agent consults before it answers. avva Advisor and avva Studio are not
+listed in the official agent stores yet.
 
 - **avva-advisor**, for people who use a connected model. It makes your agent
   consult it without being asked: `expert_questions` before locking an
@@ -17,7 +18,10 @@ install this so the connection gets used instead of forgotten. Some models
 on the shelf are reference models: composites avva wrote, labelled as such on
 their page, for trying a connection.
 
-## Claude Code
+## Install avva Advisor manually in Claude Code
+
+Run these commands in Claude Code, one line at a time. The first adds avva’s
+GitHub repository as a plugin source. The second installs Advisor from that source.
 
 ```
 /plugin marketplace add kdobrinov/avva_advisor
@@ -59,7 +63,10 @@ hook says so once and how to connect the expert for the project. With more
 than one connected for the project, it names the expert it chose. In CI it says so in its request, so a pipeline's
 pushes are counted apart from yours.
 
-## avva Studio (for experts building a model)
+## Install avva Studio manually in Claude Code
+
+To build your own Decision Model, run these commands in Claude Code. If you
+already added the source when installing Advisor, run only the second line.
 
 ```
 /plugin marketplace add kdobrinov/avva_advisor
@@ -73,6 +80,10 @@ sent. The instructions themselves come from avva Studio; the plugin adds
 tooling, not a second set of them.
 
 ## Other clients
+
+For ChatGPT or the Claude app, open the model’s page on [avva](https://avva.chat),
+choose your app, and follow its steps to add the MCP address manually. To build
+a model, use the connection instructions in [Studio](https://avva.chat/studio).
 
 Cursor and plain CLAUDE.md / AGENTS.md setups take the standing note printed
 on every expert's page — same cadence, pasted rather than installed.
