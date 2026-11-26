@@ -6,8 +6,12 @@ your agent consults before it answers.
 
 ## In ChatGPT
 
-- [Open avva Advisor](https://chatgpt.com/plugins/plugin_asdk_app_6afccab408388191be1d6cc5c71eabae?search=avva) to find a public Decision Model. Describe your decision, choose a model, then ask what its closest cases suggest.
+- [Open avva Advisor](https://chatgpt.com/plugins/plugin_asdk_app_6afccab408388191be1d6cc5c71eabae?search=avva) to find a public Decision Model. Describe your decision, choose a model, then ask what its closest cases suggest. During beta, every public model in the catalog is available in full, including in a new chat.
 - [Open avva Studio](https://chatgpt.com/plugins/plugin_asdk_app_6ae9d44fdc2881918104b802780b6f78?search=avva) to build a model from your own decisions. Choose the material it may use and review the decisions before sending them to avva.
+
+For a private workspace model, or a full reading of a link-only model, give Advisor the model link from avva. If approval is needed, open the link in its reply, approve the named model and return to the same chat. A browser approval is valid there for up to 30 days. A new conversation may need another approval. For repeat access in new ChatGPT chats, create a custom connection if your workspace allows it. Open [ChatGPT Plugins](https://chatgpt.com/plugins), select **+ → Add custom MCP server**, enter `https://mcp.avva.chat/mcp-advisor` and choose **OAuth**. Sign in on avva and approve. Select that custom connection in each new chat. It can use the approved account for up to 30 days. The directory plugin keeps its own separate connection.
+
+Guest connections have 40 requests a day, per model. An account key gives you 1,000 requests a day, per model.
 
 ## In Claude Code
 
@@ -62,7 +66,7 @@ that commit from your index and work tree. It cannot see what another program
 changes before a commit, or what `git add <paths>`, an amend or a pull will
 do, so it holds such a command and asks for that step on its own first. A dry
 run and a deletion send nothing and go through. On a connection without a
-key, each review spends the trial allowance (40 requests a day, per model). It holds a
+key, each review spends the guest allowance (40 requests a day, per model). It holds a
 push only for an expert connected for THIS project (local scope or its
 `.mcp.json`): a user-wide expert alone reviews nothing on push, and the
 hook says so once and how to connect the expert for the project. With more
@@ -87,8 +91,10 @@ tooling, not a second set of them.
 
 ## Other clients
 
-For manual setup in ChatGPT, the Claude app or another MCP client, open the model’s page on [avva](https://avva.chat),
-choose your app, and follow its steps to add the MCP address manually. To build
+To find and consult models in the Claude app, Cursor or another client that supports remote MCP, connect avva Advisor at `https://mcp.avva.chat/mcp-advisor`. Ask it to find a model for your decision. Public catalog models use their ordinary slug and work in a fresh conversation.
+
+For manual setup with a single model, open its page on [avva](https://avva.chat),
+choose your app, and follow its steps to add the MCP address manually. For a private workspace model in the Claude app or Cursor, save the member key in that connection’s configuration. To build
 a model, use the connection instructions in [Studio](https://avva.chat/studio).
 
 Cursor and plain CLAUDE.md / AGENTS.md setups take the standing note printed
@@ -110,7 +116,7 @@ on every expert's page — same cadence, pasted rather than installed.
   of every push that sends something, mechanical or not.
 - Errs toward calling: a review you did not need costs some context; a
   decision finalized without one is the failure this advisor exists to prevent.
-- Does nothing when no avva expert MCP is connected.
+- Starts a consultation once you have chosen a model in Advisor or connected a model directly.
 
 ## Maintenance
 
