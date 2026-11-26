@@ -11,7 +11,7 @@ your agent consults before it answers.
 
 For a private workspace model, or a full reading of a link-only model, give Advisor the model link from avva. If approval is needed, open the link in its reply, approve the named model and return to the same chat. A browser approval is valid there for up to 30 days. A new conversation may need another approval. For repeat access in new ChatGPT chats, create a custom connection if your workspace allows it. Open [ChatGPT Plugins](https://chatgpt.com/plugins), select **+ → Add custom MCP server**, enter `https://mcp.avva.chat/mcp-advisor` and choose **OAuth**. Sign in on avva and approve. Select that custom connection in each new chat. It can use the approved account for up to 30 days. The directory plugin keeps its own separate connection.
 
-Guest connections have 40 requests a day, per model. An account key gives you 1,000 requests a day, per model.
+Public models allow 300 requests a day, per model per network. Without a key, unlisted models allow 40 requests a day, per model. Authorized restricted models allow 1,000 requests a day, per model.
 
 ## In Claude Code
 
@@ -65,8 +65,7 @@ and branches the command names. When the same command commits first
 that commit from your index and work tree. It cannot see what another program
 changes before a commit, or what `git add <paths>`, an amend or a pull will
 do, so it holds such a command and asks for that step on its own first. A dry
-run and a deletion send nothing and go through. On a connection without a
-key, each review spends the guest allowance (40 requests a day, per model). It holds a
+run and a deletion send nothing and go through. Each review uses one request from that model’s allowance. The hook holds a
 push only for an expert connected for THIS project (local scope or its
 `.mcp.json`): a user-wide expert alone reviews nothing on push, and the
 hook says so once and how to connect the expert for the project. With more
